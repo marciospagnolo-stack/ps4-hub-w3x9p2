@@ -29,15 +29,15 @@
 </head><body>
 
 <h1>IA Qualificação — B2B</h1>
-<div class="sub">Pipeline <code>default</code> · IA no ar desde 2026-03-09 · IA = deals com <code>SDR/Farmer Responsável = Eduardo Vince</code> (owner-bot IA B2B) · gerado 18/05/2026 16:17</div>
+<div class="sub">Pipeline <code>default</code> · IA no ar desde 2026-03-09 · IA = deals com <code>SDR/Farmer Responsável = Eduardo Vince</code> (owner-bot IA B2B) · gerado 18/05/2026 16:21</div>
 
 <div class="cards">
   <div class="card"><div class="l">Total leads</div><div class="v" style="color:#f97316">1151</div><div class="d">desde 2026-03-09</div></div>
   <div class="card"><div class="l">Qualificados IA</div><div class="v" style="color:#8b5cf6">20</div><div class="d">1.7% do total</div></div>
   <div class="card"><div class="l">Qualificados humano</div><div class="v" style="color:#10b981">1102</div><div class="d">95.7% do total</div></div>
-  <div class="card"><div class="l">Desqualificados</div><div class="v" style="color:#ec4899">665</div><div class="d">57.8% do total</div></div>
-  <div class="card"><div class="l">WON pela IA</div><div class="v" style="color:#fbbf24">7</div><div class="d">35.0% win-rate IA</div></div>
-  <div class="card"><div class="l">Receita WON IA</div><div class="v" style="color:#fbbf24">R$ 24.825</div><div class="d">de R$ 2.059.346 total</div></div>
+  <div class="card"><div class="l">Perdas</div><div class="v" style="color:#ec4899">665</div><div class="d">57.8% do total</div></div>
+  <div class="card"><div class="l">Ganhos pela IA</div><div class="v" style="color:#fbbf24">7</div><div class="d">35.0% taxa de ganho IA</div></div>
+  <div class="card"><div class="l">Receita ganha IA</div><div class="v" style="color:#fbbf24">R$ 24.825</div><div class="d">de R$ 2.061.716 total</div></div>
 </div>
 
 
@@ -45,22 +45,22 @@
 <div class="verdict">
   <h2>Veredito (últimos 14 dias vs 14 dias anteriores)</h2>
   <p><strong>Adoção da IA está evoluindo ✅</strong> — participação foi <strong>0.0% → 9.2%</strong> (+9.2pp). Volume absoluto: 0 → 20.</p>
-  <p><strong>Desqualificação está melhorando ✅</strong> — <strong>43.6% → 16.1%</strong> (-27.5pp).</p>
-  <p><strong>Win-rate da IA está evoluindo ✅</strong> — <strong>0.0% → 35.0%</strong> (+35.0pp). WONs IA no período: 0 → 7 (R$ 0 → R$ 24,825).</p>
+  <p><strong>Taxa de perdas está melhorando ✅</strong> — <strong>43.6% → 16.1%</strong> (-27.5pp).</p>
+  <p><strong>Taxa de ganho da IA está evoluindo ✅</strong> — <strong>0.0% → 35.0%</strong> (+35.0pp). Ganhos IA no período: 0 → 7 (R$ 0 → R$ 24,825).</p>
 </div>
 
 <div class="chart-wrap">
-  <h3>Volume diário — qualificações × desqualificações × WONs</h3>
+  <h3>Volume diário — qualificações × perdas × ganhos</h3>
   <canvas id="chartMain"></canvas>
 </div>
 
 <div class="chart-wrap">
-  <h3>Vendas (WON) por dia — IA vs total</h3>
+  <h3>Ganhos por dia — IA vs total</h3>
   <canvas id="chartWon"></canvas>
 </div>
 
 <div class="chart-wrap">
-  <h3>% rolling 7 dias — adoção da IA & taxa de desqualificação</h3>
+  <h3>% rolling 7 dias — adoção da IA & taxa de perdas</h3>
   <canvas id="chartShare"></canvas>
 </div>
 
@@ -83,7 +83,7 @@ const ia = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 const hum = [25, 31, 27, 28, 28, 0, 0, 20, 19, 14, 18, 32, 0, 0, 28, 21, 20, 31, 22, 0, 0, 21, 25, 38, 24, 0, 0, 0, 28, 33, 29, 31, 22, 0, 0, 19, 41, 32, 28, 14, 0, 0, 11, 0, 22, 15, 21, 0, 0, 19, 27, 12, 23, 0, 0, 0, 9, 17, 13, 15, 20, 0, 0, 19, 28, 34, 18, 18, 0, 0, 12];
 const desq = [17, 27, 21, 23, 21, 0, 0, 19, 15, 12, 15, 31, 0, 0, 22, 16, 16, 26, 15, 0, 0, 19, 15, 29, 23, 0, 0, 0, 23, 24, 17, 20, 16, 0, 0, 10, 27, 17, 17, 5, 0, 0, 7, 0, 11, 6, 9, 0, 0, 13, 9, 6, 9, 0, 0, 0, 2, 4, 4, 5, 3, 0, 0, 4, 7, 7, 1, 0, 0, 0, 0];
 const won_ia = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 4, 1, 0, 0, 0, 0];
-const won_tot = [4, 8, 4, 2, 6, 0, 0, 4, 2, 2, 3, 2, 0, 0, 4, 0, 4, 2, 2, 0, 0, 2, 6, 2, 2, 0, 0, 0, 4, 6, 5, 6, 0, 0, 0, 3, 7, 9, 2, 2, 0, 0, 1, 0, 3, 2, 4, 0, 0, 1, 4, 2, 9, 0, 0, 0, 1, 2, 8, 4, 6, 0, 0, 7, 10, 14, 11, 2, 0, 0, 2];
+const won_tot = [4, 8, 4, 2, 6, 0, 0, 4, 2, 2, 3, 2, 0, 0, 4, 0, 4, 2, 2, 0, 0, 2, 6, 2, 2, 0, 0, 0, 4, 6, 5, 6, 0, 0, 0, 3, 7, 9, 2, 2, 0, 0, 1, 0, 3, 2, 4, 0, 0, 1, 4, 2, 9, 0, 0, 0, 1, 2, 8, 4, 6, 0, 0, 7, 10, 14, 11, 3, 0, 0, 2];
 
 function rolling(num, den, win) {
   const out = [];
@@ -108,7 +108,7 @@ new Chart(document.getElementById('chartMain'), {
     { label: 'Total criados', data: total, borderColor: '#f97316', backgroundColor: '#f9731622', tension: 0.3, fill: false, borderWidth: 2 },
     { label: 'Qualificados IA', data: ia, borderColor: '#8b5cf6', backgroundColor: '#8b5cf633', tension: 0.3, fill: true, borderWidth: 2 },
     { label: 'Qualificados humano', data: hum, borderColor: '#10b981', backgroundColor: '#10b98122', tension: 0.3, fill: false, borderWidth: 2 },
-    { label: 'Desqualificados', data: desq, borderColor: '#ec4899', backgroundColor: '#ec489922', tension: 0.3, fill: false, borderWidth: 2 },
+    { label: 'Perdas', data: desq, borderColor: '#ec4899', backgroundColor: '#ec489922', tension: 0.3, fill: false, borderWidth: 2 },
   ] },
   options: { ...baseOpts, scales: { y: { beginAtZero: true } } }
 });
@@ -116,8 +116,8 @@ new Chart(document.getElementById('chartMain'), {
 new Chart(document.getElementById('chartWon'), {
   type: 'bar',
   data: { labels, datasets: [
-    { label: 'WON total', data: won_tot, backgroundColor: '#06b6d4', borderColor: '#06b6d4', borderWidth: 1 },
-    { label: 'WON via IA', data: won_ia, backgroundColor: '#fbbf24', borderColor: '#fbbf24', borderWidth: 1 },
+    { label: 'Ganhos total', data: won_tot, backgroundColor: '#06b6d4', borderColor: '#06b6d4', borderWidth: 1 },
+    { label: 'Ganhos via IA', data: won_ia, backgroundColor: '#fbbf24', borderColor: '#fbbf24', borderWidth: 1 },
   ] },
   options: { ...baseOpts, scales: { y: { beginAtZero: true } } }
 });
@@ -126,7 +126,7 @@ new Chart(document.getElementById('chartShare'), {
   type: 'line',
   data: { labels, datasets: [
     { label: '% IA (7d)', data: rolling(ia, total, 7), borderColor: '#8b5cf6', backgroundColor: '#8b5cf633', tension: 0.3, fill: true, borderWidth: 2 },
-    { label: '% Desq. (7d)', data: rolling(desq, total, 7), borderColor: '#ec4899', backgroundColor: '#ec489922', tension: 0.3, fill: false, borderWidth: 2 },
+    { label: '% Perdas (7d)', data: rolling(desq, total, 7), borderColor: '#ec4899', backgroundColor: '#ec489922', tension: 0.3, fill: false, borderWidth: 2 },
     { label: '% Humano (7d)', data: rolling(hum, total, 7), borderColor: '#10b981', backgroundColor: '#10b98122', tension: 0.3, fill: false, borderWidth: 2 },
   ] },
   options: { ...baseOpts, scales: { y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } } } }
