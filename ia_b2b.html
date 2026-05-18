@@ -29,7 +29,7 @@
 </head><body>
 
 <h1>IA Qualificação — B2B</h1>
-<div class="sub">Pipeline <code>default</code> · IA no ar desde 2026-03-09 · IA = deals com <code>SDR/Farmer Responsável = Eduardo Vince</code> (owner-bot IA B2B) · gerado 18/05/2026 16:22</div>
+<div class="sub">Pipeline <code>default</code> · IA no ar desde 2026-03-09 · IA = deals com <code>SDR/Farmer Responsável = Eduardo Vince</code> (owner-bot IA B2B) · gerado 18/05/2026 16:23</div>
 
 <div class="cards">
   <div class="card"><div class="l">Total leads</div><div class="v" style="color:#f97316">1151</div><div class="d">desde 2026-03-09</div></div>
@@ -50,6 +50,11 @@
 </div>
 
 <div class="chart-wrap">
+  <h3>Volumetria rolling 7 dias — IA, Humano e Perdas (totais absolutos)</h3>
+  <canvas id="chartShare"></canvas>
+</div>
+
+<div class="chart-wrap">
   <h3>Volume diário — qualificações × perdas × ganhos</h3>
   <canvas id="chartMain"></canvas>
 </div>
@@ -57,11 +62,6 @@
 <div class="chart-wrap">
   <h3>Ganhos por dia — IA vs total</h3>
   <canvas id="chartWon"></canvas>
-</div>
-
-<div class="chart-wrap">
-  <h3>% rolling 7 dias — adoção da IA & taxa de perdas</h3>
-  <canvas id="chartShare"></canvas>
 </div>
 
 <div class="chart-wrap">
@@ -96,6 +96,17 @@ function rolling(num, den, win) {
   return out;
 }
 
+function rollingSum(arr, win) {
+  const out = [];
+  for (let i = 0; i < arr.length; i++) {
+    const s = Math.max(0, i - win + 1);
+    let n = 0;
+    for (let j = s; j <= i; j++) { n += arr[j]; }
+    out.push(n);
+  }
+  return out;
+}
+
 const baseOpts = {
   responsive: true, maintainAspectRatio: false,
   interaction: { mode: 'index', intersect: false },
@@ -125,11 +136,11 @@ new Chart(document.getElementById('chartWon'), {
 new Chart(document.getElementById('chartShare'), {
   type: 'line',
   data: { labels, datasets: [
-    { label: '% IA (7d)', data: rolling(ia, total, 7), borderColor: '#8b5cf6', backgroundColor: '#8b5cf633', tension: 0.3, fill: true, borderWidth: 2 },
-    { label: '% Perdas (7d)', data: rolling(desq, total, 7), borderColor: '#ec4899', backgroundColor: '#ec489922', tension: 0.3, fill: false, borderWidth: 2 },
-    { label: '% Humano (7d)', data: rolling(hum, total, 7), borderColor: '#10b981', backgroundColor: '#10b98122', tension: 0.3, fill: false, borderWidth: 2 },
+    { label: 'IA (soma 7d)', data: rollingSum(ia, 7), borderColor: '#8b5cf6', backgroundColor: '#8b5cf633', tension: 0.3, fill: true, borderWidth: 2 },
+    { label: 'Humano (soma 7d)', data: rollingSum(hum, 7), borderColor: '#10b981', backgroundColor: '#10b98122', tension: 0.3, fill: false, borderWidth: 2 },
+    { label: 'Perdas (soma 7d)', data: rollingSum(desq, 7), borderColor: '#ec4899', backgroundColor: '#ec489922', tension: 0.3, fill: false, borderWidth: 2 },
   ] },
-  options: { ...baseOpts, scales: { y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } } } }
+  options: { ...baseOpts, scales: { y: { beginAtZero: true } } }
 });
 </script>
 </body></html>
