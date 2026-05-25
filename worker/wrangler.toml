@@ -1,0 +1,13 @@
+name = "psa-curadoria"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+
+# Allowed origins for CORS (comma-separated). Tighten before going live.
+[vars]
+ALLOWED_ORIGINS = "https://marciospagnolo-stack.github.io,http://localhost:8000"
+
+# Secrets — set with:
+#   wrangler secret put HUBSPOT_TOKEN
+# Optional (for future Drive/Zoom transcript fetching):
+#   wrangler secret put GOOGLE_SVC_ACCOUNT_JSON
+#   wrangler secret put ZOOM_OAUTH_TOKEN
