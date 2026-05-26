@@ -1,5 +1,7 @@
-// PSA Curadoria Worker — v2 (com campos custom + calls + meetings)
-// Single endpoint: POST /curadoria { dealId } -> raw deal data (frontend classifies).
+// PSA Curadoria Worker — v3 (lista deals B2B + campos de palestrante indicado)
+// Endpoints:
+//   POST /curadoria { dealId } -> dados completos do deal pra preencher briefing
+//   GET  /deals?q=&limit=      -> lista deals B2B abertos pra typeahead
 // Token stays on Cloudflare; browser never sees it.
 
 const DEAL_PROPS = [
@@ -14,7 +16,13 @@ const DEAL_PROPS = [
   'cidade_uf_do_evento','cidade','estado_negocio','criterios_atendidos',
   'origem_do_lead','origem_da_qualificacao','formato_de_empresa',
   'gravacao_transmissao_','venda_de_ingressos_','tem_suporte_de_agencia_','conseguiu_agendar_a_meet_',
+  // Palestrantes indicados pelo time (cruzar com curadoria automática)
+  'palestrante_principal','palestrante_principal_correta',
+  'palestrante_de_interesse','palestrante_de_interesse_',
+  'palestrantes_orcados','palestrante_exclusivo_de_interesse','palestrante_dono_da_demanda',
 ];
+
+const B2B_PIPELINE = 'default'; // "Funil de Vendas B2B"
 
 export default {
   async fetch(req, env) {
@@ -40,8 +48,22 @@ export default {
       }
     }
 
+    if (url.pathname === '/deals' && req.method === 'GET') {
+      try {
+        if (!env.HUBSPOT_TOKEN) {
+          return json({ error: 'HUBSPOT_TOKEN não configurado no Worker' }, 500, cors);
+        }
+        const q = (url.searchParams.get('q') || '').trim();
+        const limit = Math.min(100, parseInt(url.searchParams.get('limit') || '50', 10));
+        const data = await listDeals(q, limit, env.HUBSPOT_TOKEN);
+        return json(data, 200, cors);
+      } catch (e) {
+        return json({ error: String(e.message || e) }, 500, cors);
+      }
+    }
+
     if (url.pathname === '/' || url.pathname === '/health') {
-      return json({ ok: true, service: 'psa-curadoria', version: 2 }, 200, cors);
+      return json({ ok: true, service: 'psa-curadoria', version: 3 }, 200, cors);
     }
 
     return json({ error: 'not found' }, 404, cors);
@@ -66,9 +88,14 @@ function json(body, status, cors) {
   });
 }
 
-async function hs(path, token) {
+async function hs(path, token, init) {
   const r = await fetch('https://api.hubapi.com' + path, {
-    headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+    ...init,
+    headers: {
+      Authorization: 'Bearer ' + token,
+      'Content-Type': 'application/json',
+      ...(init?.headers || {}),
+    },
   });
   if (!r.ok) {
     const txt = await r.text().catch(() => '');
@@ -87,6 +114,38 @@ function pickMeetingLinks(text, into) {
   for (const l of m) if (!into.includes(l)) into.push(l);
 }
 
+async function listDeals(q, limit, token) {
+  // Lista deals abertos no funil B2B. Se q tiver texto, faz busca por nome.
+  const body = {
+    filterGroups: [{
+      filters: [
+        { propertyName: 'pipeline', operator: 'EQ', value: B2B_PIPELINE },
+        { propertyName: 'hs_is_closed', operator: 'EQ', value: 'false' },
+        ...(q ? [{ propertyName: 'dealname', operator: 'CONTAINS_TOKEN', value: q }] : []),
+      ],
+    }],
+    properties: ['dealname','dealstage','createdate','closedate','nome_da_empresa','data_prevista_do_evento','amount'],
+    sorts: [{ propertyName: 'hs_lastmodifieddate', direction: 'DESCENDING' }],
+    limit,
+  };
+  const r = await hs('/crm/v3/objects/deals/search', token, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+  return {
+    total: r.total || 0,
+    deals: (r.results || []).map(d => ({
+      id: d.id,
+      name: d.properties?.dealname || '(sem nome)',
+      company: d.properties?.nome_da_empresa || '',
+      stage: d.properties?.dealstage || '',
+      eventDate: d.properties?.data_prevista_do_evento || '',
+      createdate: d.properties?.createdate || '',
+      amount: d.properties?.amount || '',
+    })),
+  };
+}
+
 async function fetchDeal(dealId, token) {
   const deal = await hs(
     `/crm/v3/objects/deals/${encodeURIComponent(dealId)}` +
@@ -98,6 +157,7 @@ async function fetchDeal(dealId, token) {
   const out = {
     dealId,
     deal: p,
+    speakerHints: extractSpeakerHints(p),
     notes: [],
     calls: [],
     meetings: [],
@@ -119,7 +179,7 @@ async function fetchDeal(dealId, token) {
     } catch (_) {}
   }
 
-  // Calls (Fase 2 — precisa de crm.objects.calls.read no Private App)
+  // Calls (precisa de crm.objects.calls.read)
   const callAssocs = deal.associations?.calls?.results || [];
   for (const { id: cid } of callAssocs.slice(0, 20)) {
     try {
@@ -147,7 +207,7 @@ async function fetchDeal(dealId, token) {
     }
   }
 
-  // Meetings (Fase 2 — precisa de crm.objects.meetings.read no Private App)
+  // Meetings (precisa de crm.objects.meetings.read)
   const meetAssocs = deal.associations?.meetings?.results || [];
   for (const { id: mid } of meetAssocs.slice(0, 20)) {
     try {
@@ -199,5 +259,32 @@ async function fetchDeal(dealId, token) {
     } catch (_) {}
   }
 
+  return out;
+}
+
+function extractSpeakerHints(p) {
+  // Devolve lista [{source, name}] por campo populado
+  const fields = [
+    ['Principal (ajustado)', p.palestrante_principal_correta],
+    ['Principal', p.palestrante_principal],
+    ['Exclusivo de interesse', p.palestrante_exclusivo_de_interesse],
+    ['De interesse (ajustado)', p.palestrante_de_interesse_],
+    ['De interesse', p.palestrante_de_interesse],
+    ['Orçado', p.palestrantes_orcados],
+    ['Dono da demanda', p.palestrante_dono_da_demanda],
+  ];
+  const seen = new Set();
+  const out = [];
+  for (const [source, raw] of fields) {
+    if (!raw) continue;
+    // Pode vir com múltiplos nomes separados por ; , ou |
+    const names = String(raw).split(/[;,|]/).map(s => s.trim()).filter(Boolean);
+    for (const name of names) {
+      const k = name.toLowerCase();
+      if (seen.has(k)) continue;
+      seen.add(k);
+      out.push({ source, name });
+    }
+  }
   return out;
 }
