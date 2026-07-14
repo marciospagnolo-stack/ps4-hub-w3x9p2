@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Funil B2B · Relatório de Gestão</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#14100E;--panel:#1E1714;--panel2:#241C18;--line:#3A2E25;--ink:#F1EAE1;--mut:#A79C90;--dim:#75695E;
+--vender:#F0883E;--cafe:#CBB08A;--largou:#6E93B0;--semler:#4E453D;--ganha:#7BB185;--perdida:#B06A5D;--resting:#7C8AA0;--radius:14px}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;font-size:15px;line-height:1.5;
+background-image:radial-gradient(1200px 500px at 80% -10%, #241a13 0%, transparent 60%)}
+.wrap{max-width:1180px;margin:0 auto;padding:32px 22px 80px}
+.num{font-family:'Space Mono',monospace;font-feature-settings:"tnum"}
+h1,h2{font-family:'Space Grotesk',sans-serif;font-weight:600;margin:0}
+.eyebrow{font-family:'Space Mono';font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--vender);margin:0 0 10px}
+h1{font-size:clamp(26px,4vw,40px);letter-spacing:-.01em;line-height:1.08}
+header .sub{color:var(--mut);max-width:64ch;margin:12px 0 0}
+.meta{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:16px;font-family:'Space Mono';font-size:12px;color:var(--dim)}
+.meta b{color:var(--mut);font-weight:400}
+.callout{margin-top:20px;background:linear-gradient(90deg,#241a12,#1e1714);border:1px solid var(--line);border-left:3px solid var(--vender);border-radius:10px;padding:14px 16px;font-size:14px}
+.callout b{color:var(--vender)}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:26px 0}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px}
+.kpi .lab{font-size:11.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--mut)}
+.kpi .big{font-family:'Space Grotesk';font-weight:700;font-size:30px;margin-top:8px;letter-spacing:-.02em}
+.kpi .foot{font-family:'Space Mono';font-size:12px;color:var(--dim);margin-top:4px}
+section{margin-top:36px}
+.shead{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.shead h2{font-size:19px}.shead .note{color:var(--dim);font-size:12.5px;font-family:'Space Mono'}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:22px}
+.bar{display:flex;height:46px;border-radius:9px;overflow:hidden;border:1px solid #00000040}
+.seg{display:flex;align-items:center;justify-content:center;min-width:2px;font-family:'Space Mono';font-size:12px;font-weight:700;transition:flex .5s}
+.leg{display:flex;flex-wrap:wrap;gap:14px 22px;margin-top:16px}
+.chip{display:flex;align-items:center;gap:8px;font-size:13px}.chip .dot{width:12px;height:12px;border-radius:3px}
+.chip .n{font-family:'Space Mono';color:var(--mut);font-size:12px}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.card{border-radius:var(--radius);padding:20px;border:1px solid var(--line);background:var(--panel);position:relative;overflow:hidden}
+.card::before{content:"";position:absolute;inset:0 auto 0 0;width:4px;background:var(--c)}
+.card .tag{display:flex;align-items:center;gap:9px;font-family:'Space Grotesk';font-weight:600;font-size:16px}
+.card .tag .sq{width:13px;height:13px;border-radius:3px;background:var(--c)}
+.card .desc{color:var(--dim);font-size:12px;margin:6px 0 16px;min-height:32px}
+.card .n2{font-family:'Space Grotesk';font-weight:700;font-size:36px;letter-spacing:-.02em;line-height:1}
+.card .of{color:var(--dim);font-size:12px;font-family:'Space Mono';margin-top:5px}
+.card .rs{color:var(--mut);font-size:13px;font-family:'Space Mono';margin-top:8px}
+.card .rs b{color:var(--ink);font-weight:700}
+
+.stgrid{display:grid;grid-template-columns:1fr;gap:9px}
+.stgrid.h{grid-template-columns:1.6fr .8fr 1fr 2fr;padding:0 4px;font-size:11px;color:var(--mut);letter-spacing:.05em;text-transform:uppercase;margin-bottom:4px}
+.stgrid.h span{font-family:'Space Mono'}
+.strow{display:grid;grid-template-columns:1.6fr .8fr 1fr 2fr;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--line);border-radius:11px;background:var(--panel2)}
+.strow .name{font-weight:600}
+.strow .n,.strow .rs{font-family:'Space Mono'}
+.strow .rs{color:var(--mut);font-size:13px}
+.mini{display:flex;height:20px;border-radius:5px;overflow:hidden;border:1px solid #00000040}
+.mini span{display:flex;align-items:center;justify-content:center;font-family:'Space Mono';font-size:10px;font-weight:700;color:#1a130e;transition:flex .5s}
+
+.otbl{width:100%;border-collapse:collapse;font-size:13.5px}
+.otbl th,.otbl td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line)}
+.otbl th{font-family:'Space Mono';font-size:11px;color:var(--mut);letter-spacing:.04em;text-transform:uppercase;font-weight:400}
+.otbl td.n{font-family:'Space Mono';text-align:right}
+.otbl td.mini-cell{width:200px}
+.otbl tr.alert td{background:linear-gradient(90deg,#3a1f13 0%,transparent 60%);border-left:3px solid var(--largou)}
+
+.worktbl{width:100%;border-collapse:collapse;font-size:13px}
+.worktbl th,.worktbl td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line)}
+.worktbl th{font-family:'Space Mono';font-size:11px;color:var(--mut);letter-spacing:.04em;text-transform:uppercase;font-weight:400}
+.worktbl td.n{font-family:'Space Mono';text-align:right}
+.worktbl td .stg{display:inline-block;padding:2px 8px;border:1px solid var(--line);border-radius:5px;font-family:'Space Mono';font-size:11px;color:var(--mut)}
+
+.reco{background:linear-gradient(90deg,#12201a,#1e1714);border:1px solid #2c4a3a;border-left:3px solid var(--ganha);border-radius:12px;padding:18px 20px;margin-top:36px}
+.reco h3{font-family:'Space Grotesk';margin:0 0 8px;font-size:16px;color:var(--ganha)}
+.reco p{margin:6px 0;font-size:13.5px;color:var(--ink)}.reco b{color:#9fd6ab}
+.foot{margin-top:40px;padding-top:18px;border-top:1px solid var(--line);color:var(--dim);font-size:12px;font-family:'Space Mono';line-height:1.7}
+@media(max-width:820px){.kpis{grid-template-columns:repeat(2,1fr)}.cards{grid-template-columns:1fr}.stgrid.h,.strow{grid-template-columns:1fr .8fr 1fr;} .stgrid.h span:nth-child(4),.strow > *:nth-child(4){display:none}}
+</style></head><body><div class="wrap">
+<header>
+ <p class="eyebrow">Relatório de gestão · Funil de Vendas B2B</p>
+ <h1>Leitura dos closers<br>sobre o funil ativo</h1>
+ <p class="sub">Negócios <b>ativos</b> até <b>Negociação avançada</b>, pela temperatura que o closer atribui a cada um. A pergunta de gestão: quanto do funil o time banca (<b>Vou vender</b>), dá nova chance (<b>Café com leite</b>) ou já solta (<b>Larguei de mão</b>) — e quanto isso representa em R$.</p>
+ <div class="meta"><span><b>Snapshot:</b> <span id="ts"></span></span><span><b>Pipeline:</b> Funil de Vendas B2B</span><span><b>Recorte:</b> Conexão → Negociação avançada</span></div>
+ <div class="callout" id="callout"></div>
+</header>
+
+<div class="kpis">
+ <div class="kpi"><div class="lab">Ativas no funil</div><div class="big num" id="k1"></div><div class="foot" id="k1f"></div></div>
+ <div class="kpi"><div class="lab">Com leitura</div><div class="big num" id="k2"></div><div class="foot" id="k2f"></div></div>
+ <div class="kpi"><div class="lab">Sem leitura</div><div class="big num" id="k3"></div><div class="foot" id="k3f"></div></div>
+ <div class="kpi"><div class="lab">Convicção "Vou vender"</div><div class="big num" id="k4"></div><div class="foot" id="k4f"></div></div>
+</div>
+
+<section><div class="shead"><h2>Termômetro do funil</h2><span class="note" id="tn"></span></div>
+ <div class="panel"><div class="bar" id="thermo"></div><div class="leg" id="leg"></div></div></section>
+
+<section><div class="shead"><h2>As três etiquetas — deals e valor (R$)</h2><span class="note">dentro dos negócios com leitura</span></div>
+ <div class="cards" id="cards"></div></section>
+
+<section><div class="shead"><h2>Por etapa</h2><span class="note">contagem, valor e mix da leitura</span></div>
+ <div class="panel">
+  <div class="stgrid h"><span>Etapa</span><span style="text-align:right">Deals</span><span style="text-align:right">Valor (R$)</span><span>Mix da leitura</span></div>
+  <div class="stgrid" id="stgrid"></div>
+ </div></section>
+
+<section><div class="shead"><h2>Por closer</h2><span class="note">quem banca, quem larga, quem ainda não leu</span></div>
+ <div class="panel"><table class="otbl" id="otbl">
+  <thead><tr><th>Closer</th><th style="text-align:right">Deals</th><th style="text-align:right">Valor (R$)</th><th>Mix da leitura</th></tr></thead>
+  <tbody></tbody>
+ </table></div></section>
+
+<section><div class="shead"><h2>Lista de trabalho — sem leitura</h2><span class="note">até 30 · priorizados por etapa avançada</span></div>
+ <div class="panel"><table class="worktbl" id="worktbl">
+  <thead><tr><th>Deal</th><th>Etapa</th><th>Dono</th><th style="text-align:right">Valor (R$)</th></tr></thead>
+  <tbody></tbody>
+ </table></div></section>
+
+<div class="reco"><h3>Sinal pra gestão</h3>
+ <p id="reco-p"></p></div>
+
+<div class="foot" id="foot"></div>
+</div>
+<script>
+const D={"generatedAt": "14/07/2026 · 13h10", "active": 443, "tagged": 356, "untag": 87, "totalAmount": 2251438.6, "mix": [{"key": "Vou vender", "n": 62, "v": 720163.0, "c": "var(--vender)", "desc": "O closer banca a venda, independente do status."}, {"key": "Café com leite", "n": 204, "v": 895944.1, "c": "var(--cafe)", "desc": "Sem firmeza ainda; quer dar uma nova chance."}, {"key": "Larguei de mão", "n": 90, "v": 517386.5, "c": "var(--largou)", "desc": "Sem futuro; sugere troca de jogador com oferta especial."}], "byStage": [{"key": "Conexão", "id": "presentationscheduled", "n": 22, "v": 24890.0, "dist": {"Vou vender": 0, "Café com leite": 1, "Larguei de mão": 7, "Sem leitura": 14}}, {"key": "Reunião agendada / Qualificado", "id": "decisionmakerboughtin", "n": 83, "v": 92185.0, "dist": {"Vou vender": 2, "Café com leite": 18, "Larguei de mão": 4, "Sem leitura": 59}}, {"key": "Aguardando Envio de Proposta", "id": "contractsent", "n": 6, "v": 14900.0, "dist": {"Vou vender": 1, "Café com leite": 3, "Larguei de mão": 0, "Sem leitura": 2}}, {"key": "Proposta enviada", "id": "closedwon", "n": 120, "v": 554894.0, "dist": {"Vou vender": 12, "Café com leite": 85, "Larguei de mão": 22, "Sem leitura": 1}}, {"key": "Em negociação", "id": "closedlost", "n": 191, "v": 1061290.6, "dist": {"Vou vender": 26, "Café com leite": 97, "Larguei de mão": 57, "Sem leitura": 11}}, {"key": "Negociação avançada", "id": "1167445770", "n": 21, "v": 503279.0, "dist": {"Vou vender": 21, "Café com leite": 0, "Larguei de mão": 0, "Sem leitura": 0}}], "owners": [{"name": "Rafael Teixeira", "n": 72, "v": 325324.9, "vv": 7, "cf": 50, "lg": 8, "sr": 7}, {"name": "Mateus Mariano", "n": 54, "v": 279888.0, "vv": 8, "cf": 26, "lg": 3, "sr": 17}, {"name": "João Gabriel Marins Pereira", "n": 48, "v": 223011.0, "vv": 18, "cf": 25, "lg": 1, "sr": 4}, {"name": "João Lucas Backmann", "n": 46, "v": 163495.0, "vv": 4, "cf": 37, "lg": 5, "sr": 0}, {"name": "Gabriel Oliveira Alves", "n": 37, "v": 236953.6, "vv": 0, "cf": 0, "lg": 37, "sr": 0}, {"name": "Rafael Oliveira Alves", "n": 32, "v": 214018.0, "vv": 0, "cf": 0, "lg": 32, "sr": 0}, {"name": "Lucas Oliveira", "n": 28, "v": 129540.0, "vv": 1, "cf": 22, "lg": 2, "sr": 3}, {"name": "Talita Santos Cruz", "n": 26, "v": 117757.9, "vv": 10, "cf": 13, "lg": 1, "sr": 2}, {"name": "Catarina Varoni Borges", "n": 25, "v": 410940.19999999995, "vv": 10, "cf": 14, "lg": 0, "sr": 1}, {"name": "Eduardo Vince", "n": 15, "v": 77385.0, "vv": 0, "cf": 8, "lg": 0, "sr": 7}, {"name": "Gustavo Pacheco", "n": 8, "v": 14970.0, "vv": 0, "cf": 0, "lg": 0, "sr": 8}, {"name": "Daniel Bento Sias", "n": 8, "v": 18950.0, "vv": 1, "cf": 7, "lg": 0, "sr": 0}, {"name": "(sem dono)", "n": 7, "v": 0.0, "vv": 0, "cf": 0, "lg": 0, "sr": 7}, {"name": "Sthefany Lima de Mello", "n": 6, "v": 14000.0, "vv": 0, "cf": 0, "lg": 0, "sr": 6}, {"name": "80454584", "n": 4, "v": 4000.0, "vv": 2, "cf": 0, "lg": 1, "sr": 1}, {"name": "93709255", "n": 4, "v": 0.0, "vv": 0, "cf": 0, "lg": 0, "sr": 4}, {"name": "79760746", "n": 4, "v": 0.0, "vv": 0, "cf": 0, "lg": 0, "sr": 4}, {"name": "80454585", "n": 3, "v": 0.0, "vv": 0, "cf": 0, "lg": 0, "sr": 3}, {"name": "80454582", "n": 3, "v": 4870.0, "vv": 1, "cf": 2, "lg": 0, "sr": 0}, {"name": "88628313", "n": 2, "v": 0.0, "vv": 0, "cf": 0, "lg": 0, "sr": 2}, {"name": "Diego Conceição", "n": 2, "v": 6950.0, "vv": 0, "cf": 0, "lg": 0, "sr": 2}, {"name": "Bruna Machado", "n": 2, "v": 6200.0, "vv": 0, "cf": 0, "lg": 0, "sr": 2}, {"name": "79760676", "n": 1, "v": 0.0, "vv": 0, "cf": 0, "lg": 0, "sr": 1}, {"name": "88628309", "n": 1, "v": 0.0, "vv": 0, "cf": 0, "lg": 0, "sr": 1}, {"name": "80454607", "n": 1, "v": 0.0, "vv": 0, "cf": 0, "lg": 0, "sr": 1}, {"name": "94028856", "n": 1, "v": 0.0, "vv": 0, "cf": 0, "lg": 0, "sr": 1}, {"name": "93238814", "n": 1, "v": 0.0, "vv": 0, "cf": 0, "lg": 0, "sr": 1}, {"name": "79760745", "n": 1, "v": 3185.0, "vv": 0, "cf": 0, "lg": 0, "sr": 1}, {"name": "Natalia Luana Correa Pacheco", "n": 1, "v": 0.0, "vv": 0, "cf": 0, "lg": 0, "sr": 1}], "worklist": [{"id": 60963794027, "name": "Sicoob Cecresp | Natália Araboni Tavares", "stage": "Em negociação", "owner": "Mateus Mariano", "amount": 4500.0}, {"id": 60616019324, "name": "Straumann | Francine Esposito 2026-05", "stage": "Em negociação", "owner": "Mateus Mariano", "amount": 1700.0}, {"id": 60565585475, "name": "19/10- Caroline - Unimed Ponta Grossa", "stage": "Em negociação", "owner": "Eduardo Vince", "amount": 10500.0}, {"id": 60486648660, "name": "ING Guindastes - Novo(a) Deal", "stage": "Em negociação", "owner": "Mateus Mariano", "amount": 2370.0}, {"id": 60177572736, "name": "unimed joinville - Maria candida", "stage": "Em negociação", "owner": "Eduardo Vince", "amount": 0.0}, {"id": 60202475541, "name": "Gabriel Juan - South Cargo", "stage": "Em negociação", "owner": "Eduardo Vince", "amount": 1200.0}, {"id": 60174523545, "name": " | Jessica", "stage": "Em negociação", "owner": "Mateus Mariano", "amount": 1000.0}, {"id": 60077674757, "name": "CURADORIA | DrogaVet - kelly | 07/05/2026 - 22/08/2026", "stage": "Em negociação", "owner": "Diego Conceição", "amount": 3920.0}, {"id": 59248281701, "name": "Secretaria de Estado da Administração de SC | Deyse", "stage": "Em negociação", "owner": "Mateus Mariano", "amount": 1000.0}, {"id": 59165768041, "name": "30/Julho - Ingrid - Eldorado Brasil ", "stage": "Em negociação", "owner": "Eduardo Vince", "amount": 5000.0}, {"id": 57941164453, "name": "Agosto/2026 - Leonardo - Verzani & Sandrini", "stage": "Em negociação", "owner": "Eduardo Vince", "amount": 3200.0}, {"id": 62414106010, "name": "27/08| Larissa | Yellow Box", "stage": "Proposta enviada", "owner": "Talita Santos Cruz", "amount": 0.0}, {"id": 62411741473, "name": "CDL Palhoça - Jusilene", "stage": "Aguardando Envio de Proposta", "owner": "Diego Conceição", "amount": 3030.0}, {"id": 62359753336, "name": "14/11 | Badesul | Patricia", "stage": "Aguardando Envio de Proposta", "owner": "Talita Santos Cruz", "amount": 2370.0}, {"id": 62631808533, "name": "Sescoop/PR | [Lead Basa] | Matheus", "stage": "Reunião agendada / Qualificado", "owner": "Catarina Varoni Borges", "amount": 0.0}, {"id": 62632060722, "name": "Ana  nze Propaganda ", "stage": "Reunião agendada / Qualificado", "owner": "Lucas Oliveira", "amount": 0.0}, {"id": 62631964555, "name": "Bautz Joalheria | Leonardo", "stage": "Reunião agendada / Qualificado", "owner": "Mateus Mariano", "amount": 8600.0}, {"id": 62630190764, "name": " USP | Luciana Marques ", "stage": "Reunião agendada / Qualificado", "owner": "João Gabriel Marins Pereira", "amount": 0.0}, {"id": 62603847440, "name": "Salero Agência | Feira Flip <> Ativação Caixa Econômica Federal", "stage": "Reunião agendada / Qualificado", "owner": "80454585", "amount": 0.0}, {"id": 62618025352, "name": "Legacy School", "stage": "Reunião agendada / Qualificado", "owner": "Mateus Mariano", "amount": 0.0}, {"id": 62618091299, "name": "Jonas - Associação Comercial e Industrial de Mogi Guaçu ", "stage": "Reunião agendada / Qualificado", "owner": "Gustavo Pacheco", "amount": 0.0}, {"id": 62617887917, "name": "11/11 | Comércio Exterior/Economia ", "stage": "Reunião agendada / Qualificado", "owner": "Mateus Mariano", "amount": 0.0}, {"id": 62619847024, "name": "Paloma - Vórtex ", "stage": "Reunião agendada / Qualificado", "owner": "Lucas Oliveira", "amount": 0.0}, {"id": 62617177428, "name": " | Gabriel", "stage": "Reunião agendada / Qualificado", "owner": "Rafael Teixeira", "amount": 0.0}, {"id": 62609023068, "name": "Grupo Red | Tiago", "stage": "Reunião agendada / Qualificado", "owner": "Rafael Teixeira", "amount": 0.0}, {"id": 62615012949, "name": "Máquina CW", "stage": "Reunião agendada / Qualificado", "owner": "Mateus Mariano", "amount": 0.0}, {"id": 62615940256, "name": "La Moda | Paulo", "stage": "Reunião agendada / Qualificado", "owner": "Rafael Teixeira", "amount": 4200.0}, {"id": 62613272649, "name": "Tay - SEBRAE NACIONAL", "stage": "Reunião agendada / Qualificado", "owner": "Lucas Oliveira", "amount": 500.0}, {"id": 62613865309, "name": "MEV Corporation | Raphael", "stage": "Reunião agendada / Qualificado", "owner": "Rafael Teixeira", "amount": 0.0}, {"id": 62610882836, "name": "UOL - Julho das pretas", "stage": "Reunião agendada / Qualificado", "owner": "João Gabriel Marins Pereira", "amount": 0.0}]};
+const fmt=n=>n.toLocaleString("pt-BR");
+const brl=n=>"R$ "+n.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});
+const pf=(a,b,d=1)=>b?(100*a/b).toLocaleString("pt-BR",{maximumFractionDigits:d})+"%":"0%";
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const COL={"Vou vender":"var(--vender)","Café com leite":"var(--cafe)","Larguei de mão":"var(--largou)","Sem leitura":"var(--semler)"};
+
+document.getElementById("ts").textContent=D.generatedAt;
+const vv=D.mix[0].n, cf=D.mix[1].n, lg=D.mix[2].n;
+
+document.getElementById("k1").textContent=fmt(D.active);
+document.getElementById("k1f").textContent=brl(D.totalAmount)+" · até Neg. avançada";
+document.getElementById("k2").textContent=fmt(D.tagged);
+document.getElementById("k2f").textContent=pf(D.tagged,D.active)+" do funil";
+document.getElementById("k3").textContent=fmt(D.untag);
+document.getElementById("k3f").textContent=pf(D.untag,D.active)+" restante";
+document.getElementById("k4").textContent=pf(vv,D.tagged);
+document.getElementById("k4f").textContent=fmt(vv)+" de "+fmt(D.tagged)+" lidos · "+brl(D.mix[0].v);
+
+document.getElementById("callout").innerHTML=
+ `Cobertura da leitura: <b>${pf(D.tagged,D.active)}</b> do funil ativo. Convicção: só <b>${pf(vv,D.tagged)}</b> dos lidos é "Vou vender" — a maior parte é "Café com leite" (${pf(cf,D.tagged)}) e ${pf(lg,D.tagged)} já é "Larguei de mão". Valor em jogo: <b>${brl(D.totalAmount)}</b>.`;
+
+// Termômetro
+const spectrum=[...D.mix.map(m=>({k:m.key,n:m.n,c:m.c})),{k:"Sem leitura",n:D.untag,c:"var(--semler)"}];
+const tb=document.getElementById("thermo"),lg2=document.getElementById("leg");
+document.getElementById("tn").textContent=fmt(D.active)+" negócios ativos · "+brl(D.totalAmount);
+spectrum.forEach(s=>{const e=document.createElement("div");e.className="seg";e.style.flex=s.n;e.style.background=s.c;
+ e.style.color=s.k==="Sem leitura"?"#cbb8a8":"#1a130e";e.textContent=(s.n/D.active>0.05)?s.n:"";tb.appendChild(e);});
+spectrum.forEach(s=>{const c=document.createElement("div");c.className="chip";
+ c.innerHTML=`<span class="dot" style="background:${s.c}"></span>${esc(s.k)} <span class="n">${s.n} · ${pf(s.n,D.active)}</span>`;lg2.appendChild(c);});
+
+// 3 etiquetas
+const cw=document.getElementById("cards");
+D.mix.forEach(m=>{const el=document.createElement("div");el.className="card";el.style.setProperty("--c",m.c);
+ el.innerHTML=`<div class="tag"><span class="sq"></span>${esc(m.key)}</div><div class="desc">${esc(m.desc)}</div>
+ <div class="n2 num">${fmt(m.n)}</div><div class="of">${pf(m.n,D.tagged)} da leitura · ${pf(m.n,D.active)} do funil ativo</div>
+ <div class="rs">Valor em jogo: <b>${brl(m.v)}</b></div>`;cw.appendChild(el);});
+
+// Por etapa
+const stg=document.getElementById("stgrid");
+D.byStage.forEach(s=>{
+  const row=document.createElement("div");row.className="strow";
+  const mini=document.createElement("div");mini.className="mini";
+  ["Vou vender","Café com leite","Larguei de mão","Sem leitura"].forEach(t=>{
+    const n=s.dist[t]||0;if(!n) return;
+    const seg=document.createElement("span");seg.style.flex=n;seg.style.background=COL[t];
+    seg.textContent=(n/s.n>0.15)?n:"";
+    if(t==="Sem leitura") seg.style.color="#cbb8a8";
+    mini.appendChild(seg);
+  });
+  row.innerHTML=`<div class="name">${esc(s.key)}</div><div class="n" style="text-align:right">${fmt(s.n)}</div><div class="rs" style="text-align:right">${brl(s.v)}</div>`;
+  row.appendChild(mini);
+  stg.appendChild(row);
+});
+
+// Closers
+const otb=document.querySelector("#otbl tbody");
+D.owners.forEach(o=>{
+  const tr=document.createElement("tr");
+  // alerta: closer que marcou TUDO como Larguei de mão
+  if(o.n>=10 && o.lg===o.n) tr.classList.add("alert");
+  const mini=[["Vou vender",o.vv],["Café com leite",o.cf],["Larguei de mão",o.lg],["Sem leitura",o.sr]]
+    .filter(([_,n])=>n>0)
+    .map(([t,n])=>`<span style="flex:${n};background:${COL[t]};${t==="Sem leitura"?"color:#cbb8a8":""}">${n/o.n>0.15?n:""}</span>`).join("");
+  tr.innerHTML=`<td>${esc(o.name)}</td><td class="n">${fmt(o.n)}</td><td class="n">${brl(o.v)}</td><td class="mini-cell"><div class="mini">${mini}</div></td>`;
+  otb.appendChild(tr);
+});
+
+// Lista de trabalho
+const wtb=document.querySelector("#worktbl tbody");
+D.worklist.forEach(w=>{
+  const tr=document.createElement("tr");
+  tr.innerHTML=`<td>${esc(w.name)}</td><td><span class="stg">${esc(w.stage)}</span></td><td>${esc(w.owner)}</td><td class="n">${w.amount?brl(w.amount):"—"}</td>`;
+  wtb.appendChild(tr);
+});
+if(D.worklist.length===0){
+  const tr=document.createElement("tr");
+  tr.innerHTML='<td colspan="4" style="color:var(--dim);text-align:center;padding:20px">🎉 Nenhum deal sem leitura — 100% de cobertura</td>';
+  wtb.appendChild(tr);
+}
+
+// Sinal pra gestão: destaca closers alertados
+const alerted=D.owners.filter(o=>o.n>=10 && o.lg===o.n);
+const recoEl=document.getElementById("reco-p");
+if(alerted.length){
+  const parts=alerted.map(o=>`<b>${esc(o.name)}</b> (${o.n} deals · ${brl(o.v)})`);
+  recoEl.innerHTML=`Closers que marcaram <b>100% da carteira ativa como "Larguei de mão"</b> — sinal de que largaram o funil, não que os deals são ruins: ${parts.join(", ")}. Vale conversa 1:1 pra entender e, se for o caso, redistribuir.`;
+}else{
+  recoEl.innerHTML=`Nenhum closer com carteira ativa marcada 100% como "Larguei de mão". Continue monitorando cobertura da leitura — hoje em <b>${pf(D.tagged,D.active)}</b>.`;
+}
+
+document.getElementById("foot").innerHTML=`Fonte: HubSpot · campo <b>temperatura_atual</b> · 6 etapas abertas até Neg. avançada. "Larguei de mão" = valor interno "Não levo fé". Snapshot <b>${D.generatedAt}</b>: ${fmt(D.active)} deals ativos, ${brl(D.totalAmount)} em jogo. Cortes coerentes entre si (mix soma ${fmt(D.tagged+D.untag)}, casa com "Ativas"). O funil muda em tempo real — este é um retrato do instante da consulta. Excluído: registro de teste "TESTE LÓE (NÃO EXCLUIR)".`;
+</script></body></html>
