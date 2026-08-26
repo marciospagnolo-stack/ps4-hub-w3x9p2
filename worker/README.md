@@ -52,6 +52,11 @@ então nenhuma visita paga a espera do HubSpot. Se o KV estiver frio (cron parad
 há mais de uma hora), o endpoint recalcula em vez de servir número velho calado.
 `?refresh=1` força o recálculo.
 
+Sem o KV vinculado o Worker sobe igual: o cron fica ocioso e o `/conversao`
+calcula sob demanda, guardando no cache de borda pelos mesmos 15 min — só a
+primeira visita de cada colo do Cloudflare espera. Vincular o KV é o que troca
+essa espera por leitura instantânea.
+
 Por que 15 minutos e não tempo real: o ciclo mediano é de 15 dias no B2B e 8 no
 B2C, e `closedate` é editável e entra com atraso. Atualizar mais rápido só
 mostraria ruído de coorte imatura.
@@ -77,7 +82,8 @@ npm install -g wrangler
 wrangler login
 wrangler secret put HUBSPOT_TOKEN     # cole o pat-... do Private App
 
-# KV do agregado de conversão — crie uma vez e cole o id em wrangler.toml
+# KV do agregado de conversão — crie e descomente o bloco em wrangler.toml
+# com o id devolvido (wrangler < 3.60 usa "kv:namespace create")
 wrangler kv namespace create CONVERSAO_KV
 
 wrangler deploy

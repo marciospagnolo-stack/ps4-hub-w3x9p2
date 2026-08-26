@@ -13,11 +13,15 @@ ALLOWED_ORIGINS = "https://marciospagnolo-stack.github.io,http://localhost:8000"
 crons = ["*/15 * * * *"]
 
 # KV que guarda o agregado pronto, pra nenhuma visita esperar o HubSpot.
-# Crie uma vez e cole o id abaixo:
+# Crie o namespace e DESCOMENTE as três linhas abaixo com o id devolvido:
+#
 #   wrangler kv namespace create CONVERSAO_KV
-[[kv_namespaces]]
-binding = "CONVERSAO_KV"
-id = "COLE_O_ID_AQUI"
+#
+# Sem isso o Worker sobe do mesmo jeito — o cron fica ocioso e o /conversao
+# calcula sob demanda, servindo do cache de borda por 15 min.
+# [[kv_namespaces]]
+# binding = "CONVERSAO_KV"
+# id = "cole-o-id-devolvido-pelo-comando-acima"
 
 # Secrets — set with:
 #   wrangler secret put HUBSPOT_TOKEN
