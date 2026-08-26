@@ -78,6 +78,10 @@
   h1 { font-size: 28px; line-height: 1.2; margin: 0 0 6px; letter-spacing: -0.01em; }
   .lede { color: var(--ink-2); margin: 0 0 4px; max-width: 74ch; }
   .stamp { color: var(--muted); font-size: 13px; margin: 0; }
+  #frescor { display: inline-flex; align-items: center; gap: 6px; margin-top: 6px; }
+  #frescor .ponto { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  #frescor[data-estado="vivo"] .ponto { animation: pulso 2s infinite; }
+  @keyframes pulso { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
 
   h2 {
     font-size: 19px; margin: 40px 0 4px; letter-spacing: -0.01em;
@@ -168,7 +172,8 @@
   <h1>Taxa de Conversão — B2B e B2C</h1>
   <p class="lede">Conversão proposta&nbsp;→&nbsp;venda nos dois funis da Profissionais SA, reconstruída direto do
   HubSpot com o denominador corrigido. Não é “lead → venda”: o ponto de partida é a proposta enviada.</p>
-  <p class="stamp">Portal 49656171 · janeiro a agosto de 2026 · dados extraídos em 26/08/2026</p>
+  <p class="stamp">Portal 49656171 · janeiro a agosto de 2026 · meses fechados vindos dos CSVs versionados</p>
+  <p class="stamp" id="frescor"></p>
 </header>
 
 <div class="kpis">
@@ -188,9 +193,9 @@
     <div class="foot">B2B / B2C · p75 do B2B = 34&nbsp;d, p90 = 58&nbsp;d</div>
   </div>
   <div class="kpi">
-    <div class="lbl">Agosto B2B</div>
-    <div class="val" style="font-size:26px">13,6% <span style="color:var(--muted);font-weight:400">→</span> 16,3%</div>
-    <div class="foot">observado → projetado (denominador fechado, faltam as vendas de 27 a 31/08)</div>
+    <div class="lbl" id="k-mes"></div>
+    <div class="val" style="font-size:26px" id="k-mes-v"></div>
+    <div class="foot" id="k-mes-f"></div>
   </div>
 </div>
 
@@ -367,6 +372,8 @@ com cada um.</p>
   Dados desta página: <a href="dados/conversao/b2b_mensal.csv">b2b_mensal.csv</a> ·
   <a href="dados/conversao/b2c_mensal.csv">b2c_mensal.csv</a> ·
   <a href="dados/conversao/b2c_receita.csv">b2c_receita.csv</a>.
+  <br>Meses fechados: CSVs versionados. Mês corrente: endpoint <code>/conversao</code> do Worker
+  <code>psa-curadoria</code>, recalculado a cada 15 min por Cron Trigger e servido do KV.
   <br>PSA · Marcio Spagnolo · <a href="index.html">voltar ao hub</a>
 </footer>
 

@@ -30,7 +30,21 @@ const RECEITA = {
   'Base':        { tipo:'expansao',  d:[[0,0],[17,43028],[28,84701],[36,120464],[34,96000],[37,181900],[23,98125],[21,133100]] },
 };
 
-const AGOSTO_B2B_PROJETADO = 16.3; // README: denominador fechado, faltam vendas de 27–31/08
+// README: agosto com denominador fechado, faltando as vendas de 27 a 31/08.
+// Sobrescrito pela leitura ao vivo quando o Worker responde.
+let B2B_VENDAS_PROJETADAS = 89;
+
+// Expansão (Mentorias + Base) só aparece somada na tela — mantida como array próprio
+// para a hidratação ao vivo poder reescrevê-la sem tocar na quebra por produto.
+const EXPANSAO = {
+  vendas:  MESES.map((_, i) => RECEITA['Mentorias'].d[i][0] + RECEITA['Base'].d[i][0]),
+  receita: MESES.map((_, i) => RECEITA['Mentorias'].d[i][1] + RECEITA['Base'].d[i][1]),
+};
+
+// Endpoint do Worker que devolve o mês corrente ao vivo. Vazio = página serve só
+// os números auditados dos CSVs. Ex.: 'https://psa-curadoria.SUA-CONTA.workers.dev'
+const PSA_WORKER_URL = '';
+const INTERVALO_REFRESH_MS = 5 * 60 * 1000;
 
 /* ---------- formatação ---------- */
 const nf  = new Intl.NumberFormat('pt-BR');
@@ -279,167 +293,258 @@ function dispersao({ w, pontos, cor, xFmt, yFmt, tipHtml, alturaBase = 300 }) {
 /* ================= montagem ================= */
 const C1 = () => css('--s1'), C2 = () => css('--s2'), C3 = () => css('--s3');
 
-/* KPIs */
-const totB2B = soma(B2B.TOTAL), totB2C = soma(B2C.TOTAL);
-document.getElementById('k-b2b').textContent = pct(taxa(totB2B));
-document.getElementById('k-b2b-f').textContent = `${int(totB2B[1])} vendas / ${int(totB2B[0])} propostas`;
-document.getElementById('k-b2c').textContent = pct(taxa(totB2C));
-document.getElementById('k-b2c-f').textContent = `${int(totB2C[1])} vendas / ${int(totB2C[0])} propostas`;
+function montar() {
+  registro.length = 0; // remonta do zero: evita registrar o mesmo gráfico duas vezes
 
-/* 1. série mensal */
-legenda('#lg-main', [{ nome: 'B2B', cor: C1() }, { nome: 'B2C aquisição', cor: C2() },
-  { nome: 'ago B2B projetado (16,3%)', cor: C1(), anel: true }]);
-grafico('#c-main', w => linhas({
-  w, rotulos: ROTULO, yMax: 22, yFmt: v => v + '%',
-  series: [
-    { nome: 'B2B', cor: C1(), dados: B2B.TOTAL.map(taxa), tracejado: [7, taxa(B2B.TOTAL[7]), 7, AGOSTO_B2B_PROJETADO] },
-    { nome: 'B2C', cor: C2(), dados: B2C.TOTAL.map(taxa) },
-  ],
-  tipFmt: (se, i) => {
-    const d = se.nome === 'B2B' ? B2B.TOTAL[i] : B2C.TOTAL[i];
-    return `${pct(taxa(d))} <span style="color:var(--muted);font-weight:400">(${d[1]}/${d[0]})</span>`;
-  },
-}));
-tabela('#t-main', ['Mês', 'B2B propostas', 'B2B vendas', 'B2B taxa', 'B2C propostas', 'B2C vendas', 'B2C taxa'],
-  ROTULO.map((r, i) => [r, int(B2B.TOTAL[i][0]), int(B2B.TOTAL[i][1]), pct(taxa(B2B.TOTAL[i])),
-    int(B2C.TOTAL[i][0]), int(B2C.TOTAL[i][1]), pct(taxa(B2C.TOTAL[i]))]),
-  ['jan–ago', int(totB2B[0]), int(totB2B[1]), pct(taxa(totB2B)), int(totB2C[0]), int(totB2C[1]), pct(taxa(totB2C))]);
+  const totB2B = soma(B2B.TOTAL), totB2C = soma(B2C.TOTAL);
+  const ult = MESES.length - 1;
 
-/* 2. B2B por canal */
-const CANAIS = [
-  { nome: 'Inbound', cor: C1(), d: B2B.Inbound },
-  { nome: 'Farmer', cor: C2(), d: B2B.Farmer },
-  { nome: 'Palestrante', cor: C3(), d: B2B.Palestrante },
-];
-const CANAIS_LINHA = CANAIS.filter(c => c.nome !== 'Palestrante');
-legenda('#lg-b2bcanal', CANAIS_LINHA);
-legenda('#lg-b2bmix', CANAIS);
-grafico('#c-b2bcanal', w => linhas({
-  w, rotulos: ROTULO, yMax: Math.max(...CANAIS_LINHA.flatMap(c => c.d.map(taxa))), yFmt: v => v + '%',
-  series: CANAIS_LINHA.map(c => ({ nome: c.nome, cor: c.cor, dados: c.d.map(taxa) })),
-  tipFmt: (se, i) => {
-    const c = CANAIS.find(x => x.nome === se.nome).d[i];
-    return `${pct(taxa(c))} <span style="color:var(--muted);font-weight:400">(${c[1]}/${c[0]})</span>`;
-  },
-}));
-grafico('#c-b2bmix', w => empilhadas({
-  w, rotulos: ROTULO, normalizar: true, yFmt: v => v + '%',
-  series: CANAIS.map(c => ({ nome: c.nome, cor: c.cor, dados: c.d.map(x => x[0]) })),
-  tipFmt: (se, i) => {
-    const c = CANAIS.find(x => x.nome === se.nome).d[i];
-    const t = CANAIS.reduce((a, x) => a + x.d[i][0], 0);
-    return `${int(c[0])} <span style="color:var(--muted);font-weight:400">(${Math.round(c[0] / t * 100)}%)</span>`;
-  },
-}));
-tabela('#t-b2bcanal',
-  ['Mês', 'Método', 'Inbound', 'Farmer', 'Palestrante', 'Total'],
-  ROTULO.map((r, i) => [r, B2B.metodo[i] === 'coorte' ? 'coorte' : 'janela 16→15',
-    `${pct(taxa(B2B.Inbound[i]))} (${B2B.Inbound[i][1]}/${B2B.Inbound[i][0]})`,
-    `${pct(taxa(B2B.Farmer[i]))} (${B2B.Farmer[i][1]}/${B2B.Farmer[i][0]})`,
-    `${pct(taxa(B2B.Palestrante[i]))} (${B2B.Palestrante[i][1]}/${B2B.Palestrante[i][0]})`,
-    `${pct(taxa(B2B.TOTAL[i]))} (${B2B.TOTAL[i][1]}/${B2B.TOTAL[i][0]})`]),
-  ['jan–ago', '', ...['Inbound', 'Farmer', 'Palestrante'].map(k => {
-    const t = soma(B2B[k]); return `${pct(taxa(t))} (${t[1]}/${t[0]})`;
-  }), `${pct(taxa(totB2B))} (${totB2B[1]}/${totB2B[0]})`]);
-tabela('#t-b2bmix', ['Mês', 'Inbound', 'Farmer', 'Palestrante', 'Total propostas'],
-  ROTULO.map((r, i) => {
-    const t = CANAIS.reduce((a, x) => a + x.d[i][0], 0);
-    return [r, ...CANAIS.map(c => `${int(c.d[i][0])} (${Math.round(c.d[i][0] / t * 100)}%)`), int(t)];
+  /* KPIs */
+  document.getElementById('k-b2b').textContent = pct(taxa(totB2B));
+  document.getElementById('k-b2b-f').textContent = `${int(totB2B[1])} vendas / ${int(totB2B[0])} propostas`;
+  document.getElementById('k-b2c').textContent = pct(taxa(totB2C));
+  document.getElementById('k-b2c-f').textContent = `${int(totB2C[1])} vendas / ${int(totB2C[0])} propostas`;
+
+  const obsB2B = taxa(B2B.TOTAL[ult]);
+  // Sem denominador fechado não há projeção honesta: a janela ainda está recebendo propostas.
+  const temProj = B2B_VENDAS_PROJETADAS != null && B2B_VENDAS_PROJETADAS > B2B.TOTAL[ult][1] && B2B.TOTAL[ult][0] > 0;
+  const projB2B = temProj ? B2B_VENDAS_PROJETADAS / B2B.TOTAL[ult][0] * 100 : null;
+  document.getElementById('k-mes').textContent = `${ROTULO[ult]} B2B`;
+  document.getElementById('k-mes-v').innerHTML = temProj
+    ? `${pct(obsB2B)} <span style="color:var(--muted);font-weight:400">→</span> ${pct(projB2B)}`
+    : pct(obsB2B);
+  document.getElementById('k-mes-f').textContent = temProj
+    ? `observado (${B2B.TOTAL[ult][1]}/${B2B.TOTAL[ult][0]}) → projetado por extrapolação linear das vendas do mês`
+    : `observado (${B2B.TOTAL[ult][1]}/${B2B.TOTAL[ult][0]}) · janela do denominador ainda aberta, sem projeção`;
+
+  /* 1. série mensal */
+  legenda('#lg-main', [{ nome: 'B2B', cor: C1() }, { nome: 'B2C aquisição', cor: C2() },
+    ...(temProj ? [{ nome: `${ROTULO[ult]} B2B projetado (${pct(projB2B)})`, cor: C1(), anel: true }] : [])]);
+  grafico('#c-main', w => linhas({
+    w, rotulos: ROTULO, yMax: Math.max(22, (projB2B || 0) + 2), yFmt: v => v + '%',
+    series: [
+      { nome: 'B2B', cor: C1(), dados: B2B.TOTAL.map(taxa),
+        ...(temProj ? { tracejado: [ult, obsB2B, ult, projB2B] } : {}) },
+      { nome: 'B2C', cor: C2(), dados: B2C.TOTAL.map(taxa) },
+    ],
+    tipFmt: (se, i) => {
+      const d = se.nome === 'B2B' ? B2B.TOTAL[i] : B2C.TOTAL[i];
+      return `${pct(taxa(d))} <span style="color:var(--muted);font-weight:400">(${d[1]}/${d[0]})</span>`;
+    },
   }));
+  tabela('#t-main', ['Mês', 'B2B propostas', 'B2B vendas', 'B2B taxa', 'B2C propostas', 'B2C vendas', 'B2C taxa'],
+    ROTULO.map((r, i) => [r, int(B2B.TOTAL[i][0]), int(B2B.TOTAL[i][1]), pct(taxa(B2B.TOTAL[i])),
+      int(B2C.TOTAL[i][0]), int(B2C.TOTAL[i][1]), pct(taxa(B2C.TOTAL[i]))]),
+    ['jan–' + ROTULO[ult], int(totB2B[0]), int(totB2B[1]), pct(taxa(totB2B)),
+      int(totB2C[0]), int(totB2C[1]), pct(taxa(totB2C))]);
 
-const tInb = soma(B2B.Inbound), tFar = soma(B2B.Farmer);
-document.getElementById('i-inb-prop').innerHTML = `<b>${int(tInb[0])}</b>`;
-document.getElementById('i-inb-taxa').innerHTML = `<b>${pct(taxa(tInb))}</b>`;
-document.getElementById('i-far-taxa').innerHTML = `<b>${pct(taxa(tFar))}</b>`;
-const tPal = soma(B2B.Palestrante);
-const elPal = document.getElementById('i-pal');
-if (elPal) elPal.innerHTML = `<b>${int(tPal[0])}</b> propostas no ano e <b>${pct(taxa(tPal))}</b>`;
+  /* 2. B2B por canal */
+  const CANAIS = [
+    { nome: 'Inbound', cor: C1(), d: B2B.Inbound },
+    { nome: 'Farmer', cor: C2(), d: B2B.Farmer },
+    { nome: 'Palestrante', cor: C3(), d: B2B.Palestrante },
+  ];
+  const CANAIS_LINHA = CANAIS.filter(c => c.nome !== 'Palestrante');
+  legenda('#lg-b2bcanal', CANAIS_LINHA);
+  legenda('#lg-b2bmix', CANAIS);
+  grafico('#c-b2bcanal', w => linhas({
+    w, rotulos: ROTULO, yMax: Math.max(...CANAIS_LINHA.flatMap(c => c.d.map(taxa))), yFmt: v => v + '%',
+    series: CANAIS_LINHA.map(c => ({ nome: c.nome, cor: c.cor, dados: c.d.map(taxa) })),
+    tipFmt: (se, i) => {
+      const c = CANAIS.find(x => x.nome === se.nome).d[i];
+      return `${pct(taxa(c))} <span style="color:var(--muted);font-weight:400">(${c[1]}/${c[0]})</span>`;
+    },
+  }));
+  grafico('#c-b2bmix', w => empilhadas({
+    w, rotulos: ROTULO, normalizar: true, yFmt: v => v + '%',
+    series: CANAIS.map(c => ({ nome: c.nome, cor: c.cor, dados: c.d.map(x => x[0]) })),
+    tipFmt: (se, i) => {
+      const c = CANAIS.find(x => x.nome === se.nome).d[i];
+      const t = CANAIS.reduce((a, x) => a + x.d[i][0], 0) || 1;
+      return `${int(c[0])} <span style="color:var(--muted);font-weight:400">(${Math.round(c[0] / t * 100)}%)</span>`;
+    },
+  }));
+  tabela('#t-b2bcanal', ['Mês', 'Método', 'Inbound', 'Farmer', 'Palestrante', 'Total'],
+    ROTULO.map((r, i) => [r, B2B.metodo[i] === 'coorte' ? 'coorte' : 'janela 16→15',
+      ...CANAIS.map(c => `${pct(taxa(c.d[i]))} (${c.d[i][1]}/${c.d[i][0]})`),
+      `${pct(taxa(B2B.TOTAL[i]))} (${B2B.TOTAL[i][1]}/${B2B.TOTAL[i][0]})`]),
+    ['jan–' + ROTULO[ult], '', ...['Inbound', 'Farmer', 'Palestrante'].map(k => {
+      const t = soma(B2B[k]); return `${pct(taxa(t))} (${t[1]}/${t[0]})`;
+    }), `${pct(taxa(totB2B))} (${totB2B[1]}/${totB2B[0]})`]);
+  tabela('#t-b2bmix', ['Mês', 'Inbound', 'Farmer', 'Palestrante', 'Total propostas'],
+    ROTULO.map((r, i) => {
+      const t = CANAIS.reduce((a, x) => a + x.d[i][0], 0) || 1;
+      return [r, ...CANAIS.map(c => `${int(c.d[i][0])} (${Math.round(c.d[i][0] / t * 100)}%)`), int(t)];
+    }));
 
-/* 3. B2C */
-grafico('#c-b2cscatter', w => dispersao({
-  w, cor: C2(), xFmt: v => int(v), yFmt: v => v + '%',
-  pontos: ROTULO.map((r, i) => ({ rot: r, x: B2C.TOTAL[i][0], y: taxa(B2C.TOTAL[i]), i })),
-  tipHtml: p => `<div class="t-h">${esc(p.rot)}</div>`
-    + `<div class="t-r"><span class="t-n">propostas</span><b>${int(p.x)}</b></div>`
-    + `<div class="t-r"><span class="t-n">vendas</span><b>${int(B2C.TOTAL[p.i][1])}</b></div>`
-    + `<div class="t-r"><span class="t-n">taxa</span><b>${pct(p.y)}</b></div>`,
-}));
-tabela('#t-b2cscatter', ['Mês', 'Propostas', 'Vendas', 'Taxa'],
-  ROTULO.map((r, i) => [r, int(B2C.TOTAL[i][0]), int(B2C.TOTAL[i][1]), pct(taxa(B2C.TOTAL[i]))]),
-  ['jan–ago', int(totB2C[0]), int(totB2C[1]), pct(taxa(totB2C))]);
+  const tInb = soma(B2B.Inbound), tFar = soma(B2B.Farmer), tPal = soma(B2B.Palestrante);
+  document.getElementById('i-inb-prop').innerHTML = `<b>${int(tInb[0])}</b>`;
+  document.getElementById('i-inb-taxa').innerHTML = `<b>${pct(taxa(tInb))}</b>`;
+  document.getElementById('i-far-taxa').innerHTML = `<b>${pct(taxa(tFar))}</b>`;
+  document.getElementById('i-pal').innerHTML = `<b>${int(tPal[0])}</b> propostas no ano e <b>${pct(taxa(tPal))}</b>`;
 
-const PRODUTOS = [
-  { nome: 'TBW Weekend', cor: C1(), d: B2C['TBW Weekend'] },
-  { nome: 'Best Day+', cor: C2(), d: B2C['Best Day+'] },
-];
-legenda('#lg-b2cprod', PRODUTOS);
-grafico('#c-b2cprod', w => linhas({
-  w, rotulos: ROTULO, yMax: Math.max(...PRODUTOS.flatMap(p => p.d.map(taxa))), yFmt: v => v + '%',
-  series: PRODUTOS.map(p => ({ nome: p.nome, cor: p.cor, dados: p.d.map(taxa) })),
-  tipFmt: (se, i) => {
-    const d = PRODUTOS.find(x => x.nome === se.nome).d[i];
-    return `${pct(taxa(d))} <span style="color:var(--muted);font-weight:400">(${d[1]}/${d[0]})</span>`;
-  },
-}));
-tabela('#t-b2cprod', ['Mês', 'TBW Weekend', 'Best Day+', 'Total'],
-  ROTULO.map((r, i) => [r,
-    `${pct(taxa(B2C['TBW Weekend'][i]))} (${B2C['TBW Weekend'][i][1]}/${B2C['TBW Weekend'][i][0]})`,
-    `${pct(taxa(B2C['Best Day+'][i]))} (${B2C['Best Day+'][i][1]}/${B2C['Best Day+'][i][0]})`,
-    `${pct(taxa(B2C.TOTAL[i]))} (${B2C.TOTAL[i][1]}/${B2C.TOTAL[i][0]})`]),
-  ['jan–ago', ...['TBW Weekend', 'Best Day+', 'TOTAL'].map(k => {
-    const t = soma(B2C[k]); return `${pct(taxa(t))} (${t[1]}/${t[0]})`;
-  })]);
+  /* 3. B2C */
+  grafico('#c-b2cscatter', w => dispersao({
+    w, cor: C2(), xFmt: v => int(v), yFmt: v => v + '%',
+    pontos: ROTULO.map((r, i) => ({ rot: r, x: B2C.TOTAL[i][0], y: taxa(B2C.TOTAL[i]), i })),
+    tipHtml: p => `<div class="t-h">${esc(p.rot)}</div>`
+      + `<div class="t-r"><span class="t-n">propostas</span><b>${int(p.x)}</b></div>`
+      + `<div class="t-r"><span class="t-n">vendas</span><b>${int(B2C.TOTAL[p.i][1])}</b></div>`
+      + `<div class="t-r"><span class="t-n">taxa</span><b>${pct(p.y)}</b></div>`,
+  }));
+  tabela('#t-b2cscatter', ['Mês', 'Propostas', 'Vendas', 'Taxa'],
+    ROTULO.map((r, i) => [r, int(B2C.TOTAL[i][0]), int(B2C.TOTAL[i][1]), pct(taxa(B2C.TOTAL[i]))]),
+    ['jan–' + ROTULO[ult], int(totB2C[0]), int(totB2C[1]), pct(taxa(totB2C))]);
 
-const tTbw = soma(B2C['TBW Weekend']), tBd = soma(B2C['Best Day+']);
-const recTbw = RECEITA['TBW Weekend'].d.reduce((a, b) => [a[0] + b[0], a[1] + b[1]], [0, 0]);
-const recBd = RECEITA['Best Day+'].d.reduce((a, b) => [a[0] + b[0], a[1] + b[1]], [0, 0]);
-document.getElementById('i-tbw-taxa').innerHTML = `<b>${pct(taxa(tTbw))}</b>`;
-document.getElementById('i-bd-taxa').innerHTML = `<b>${pct(taxa(tBd))}</b>`;
-document.getElementById('i-tbw-tk').innerHTML = `<b>${brl(recTbw[1] / recTbw[0], true)}</b>`;
-document.getElementById('i-bd-tk').innerHTML = `<b>${brl(recBd[1] / recBd[0], true)}</b>`;
+  const PRODUTOS = [
+    { nome: 'TBW Weekend', cor: C1(), d: B2C['TBW Weekend'] },
+    { nome: 'Best Day+', cor: C2(), d: B2C['Best Day+'] },
+  ];
+  legenda('#lg-b2cprod', PRODUTOS);
+  grafico('#c-b2cprod', w => linhas({
+    w, rotulos: ROTULO, yMax: Math.max(...PRODUTOS.flatMap(p => p.d.map(taxa))), yFmt: v => v + '%',
+    series: PRODUTOS.map(p => ({ nome: p.nome, cor: p.cor, dados: p.d.map(taxa) })),
+    tipFmt: (se, i) => {
+      const d = PRODUTOS.find(x => x.nome === se.nome).d[i];
+      return `${pct(taxa(d))} <span style="color:var(--muted);font-weight:400">(${d[1]}/${d[0]})</span>`;
+    },
+  }));
+  tabela('#t-b2cprod', ['Mês', 'TBW Weekend', 'Best Day+', 'Total'],
+    ROTULO.map((r, i) => [r, ...PRODUTOS.map(p => `${pct(taxa(p.d[i]))} (${p.d[i][1]}/${p.d[i][0]})`),
+      `${pct(taxa(B2C.TOTAL[i]))} (${B2C.TOTAL[i][1]}/${B2C.TOTAL[i][0]})`]),
+    ['jan–' + ROTULO[ult], ...['TBW Weekend', 'Best Day+', 'TOTAL'].map(k => {
+      const t = soma(B2C[k]); return `${pct(taxa(t))} (${t[1]}/${t[0]})`;
+    })]);
 
-/* 4. receita */
-const FRENTES = [
-  { nome: 'TBW Weekend', cor: C1(), k: 'TBW Weekend' },
-  { nome: 'Best Day+', cor: C2(), k: 'Best Day+' },
-  { nome: 'Mentorias + Base (expansão)', cor: C3(), k: null },
-];
-const expansao = MESES.map((_, i) => RECEITA['Mentorias'].d[i][1] + RECEITA['Base'].d[i][1]);
-const expansaoV = MESES.map((_, i) => RECEITA['Mentorias'].d[i][0] + RECEITA['Base'].d[i][0]);
-legenda('#lg-rec', FRENTES);
-grafico('#c-rec', w => empilhadas({
-  w, rotulos: ROTULO, yFmt: v => v >= 1e6 ? nf1.format(v / 1e6) + ' mi' : nf.format(v / 1e3) + 'k',
-  series: [
-    { nome: 'TBW Weekend', cor: C1(), dados: RECEITA['TBW Weekend'].d.map(x => x[1]) },
-    { nome: 'Best Day+', cor: C2(), dados: RECEITA['Best Day+'].d.map(x => x[1]) },
-    { nome: 'Mentorias + Base (expansão)', cor: C3(), dados: expansao },
-  ],
-  tipFmt: (se, i) => {
-    const v = se.nome.startsWith('TBW') ? RECEITA['TBW Weekend'].d[i]
-      : se.nome.startsWith('Best') ? RECEITA['Best Day+'].d[i] : [expansaoV[i], expansao[i]];
-    return `${brl(v[1], true)} <span style="color:var(--muted);font-weight:400">(${v[0]} vendas)</span>`;
-  },
-}));
-tabela('#t-rec', ['Mês', 'TBW Weekend', 'Best Day+', 'Expansão', 'Total'],
-  ROTULO.map((r, i) => {
-    const a = RECEITA['TBW Weekend'].d[i][1], b = RECEITA['Best Day+'].d[i][1], c = expansao[i];
-    return [r, brl(a), brl(b), brl(c), brl(a + b + c)];
-  }),
-  (() => {
-    const a = recTbw[1], b = recBd[1], c = expansao.reduce((x, y) => x + y, 0);
-    return ['jan–ago', brl(a), brl(b), brl(c), brl(a + b + c)];
-  })());
+  const tTbw = soma(B2C['TBW Weekend']), tBd = soma(B2C['Best Day+']);
+  const recTbw = RECEITA['TBW Weekend'].d.reduce((a, b) => [a[0] + b[0], a[1] + b[1]], [0, 0]);
+  const recBd = RECEITA['Best Day+'].d.reduce((a, b) => [a[0] + b[0], a[1] + b[1]], [0, 0]);
+  document.getElementById('i-tbw-taxa').innerHTML = `<b>${pct(taxa(tTbw))}</b>`;
+  document.getElementById('i-bd-taxa').innerHTML = `<b>${pct(taxa(tBd))}</b>`;
+  document.getElementById('i-tbw-tk').innerHTML = `<b>${brl(recTbw[1] / recTbw[0], true)}</b>`;
+  document.getElementById('i-bd-tk').innerHTML = `<b>${brl(recBd[1] / recBd[0], true)}</b>`;
 
-const recAq = recTbw[1] + recBd[1];
-const recEx = expansao.reduce((a, b) => a + b, 0);
-const vendasAq = recTbw[0] + recBd[0];
-const vendasEx = expansaoV.reduce((a, b) => a + b, 0);
-document.getElementById('k-rec-aq').textContent = brl(recAq, true);
-document.getElementById('k-rec-aq-f').textContent =
-  `${int(vendasAq)} vendas · ${Math.round(recAq / (recAq + recEx) * 100)}% da receita · ticket ${brl(recAq / vendasAq, true)}`;
-document.getElementById('k-rec-ex').textContent = brl(recEx, true);
-document.getElementById('k-rec-ex-f').textContent =
-  `${int(vendasEx)} vendas · ${Math.round(recEx / (recAq + recEx) * 100)}% da receita · ticket ${brl(recEx / vendasEx, true)}`;
+  /* 4. receita */
+  const FRENTES = [
+    { nome: 'TBW Weekend', cor: C1(), d: RECEITA['TBW Weekend'].d },
+    { nome: 'Best Day+', cor: C2(), d: RECEITA['Best Day+'].d },
+    { nome: 'Mentorias + Base (expansão)', cor: C3(), d: EXPANSAO.vendas.map((v, i) => [v, EXPANSAO.receita[i]]) },
+  ];
+  legenda('#lg-rec', FRENTES);
+  grafico('#c-rec', w => empilhadas({
+    w, rotulos: ROTULO, yFmt: v => v >= 1e6 ? nf1.format(v / 1e6) + ' mi' : nf.format(v / 1e3) + 'k',
+    series: FRENTES.map(f => ({ nome: f.nome, cor: f.cor, dados: f.d.map(x => x[1]) })),
+    tipFmt: (se, i) => {
+      const v = FRENTES.find(x => x.nome === se.nome).d[i];
+      return `${brl(v[1], true)} <span style="color:var(--muted);font-weight:400">(${v[0]} vendas)</span>`;
+    },
+  }));
+  tabela('#t-rec', ['Mês', 'TBW Weekend', 'Best Day+', 'Expansão', 'Total'],
+    ROTULO.map((r, i) => {
+      const [a, b, c] = FRENTES.map(f => f.d[i][1]);
+      return [r, brl(a), brl(b), brl(c), brl(a + b + c)];
+    }),
+    (() => {
+      const [a, b, c] = FRENTES.map(f => f.d.reduce((x, y) => x + y[1], 0));
+      return ['jan–' + ROTULO[ult], brl(a), brl(b), brl(c), brl(a + b + c)];
+    })());
+
+  const recAq = recTbw[1] + recBd[1];
+  const recEx = EXPANSAO.receita.reduce((a, b) => a + b, 0);
+  const vendasAq = recTbw[0] + recBd[0];
+  const vendasEx = EXPANSAO.vendas.reduce((a, b) => a + b, 0);
+  document.getElementById('k-rec-aq').textContent = brl(recAq, true);
+  document.getElementById('k-rec-aq-f').textContent =
+    `${int(vendasAq)} vendas · ${Math.round(recAq / (recAq + recEx) * 100)}% da receita · ticket ${brl(recAq / vendasAq, true)}`;
+  document.getElementById('k-rec-ex').textContent = brl(recEx, true);
+  document.getElementById('k-rec-ex-f').textContent =
+    `${int(vendasEx)} vendas · ${Math.round(recEx / (recAq + recEx) * 100)}% da receita · ticket ${brl(recEx / vendasEx, true)}`;
+}
+
+montar();
+
+/* ================= hidratação ao vivo ================= */
+/* Só o mês corrente vem do Worker. Os meses fechados continuam vindo dos CSVs
+   versionados, que são o registro auditável e reproduzível pelas queries. */
+
+const ABREV = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+
+function posicaoDoMes(mes) {
+  const i = MESES.indexOf(mes);
+  if (i >= 0) return i;
+  if (mes < MESES[MESES.length - 1]) return -1; // mês passado que já saiu da janela: ignora
+  MESES.push(mes);
+  ROTULO.push(ABREV[parseInt(mes.slice(5), 10) - 1]);
+  B2B.metodo.push('janela_16_15');
+  for (const k of ['Inbound', 'Farmer', 'Palestrante', 'TOTAL']) B2B[k].push([0, 0]);
+  for (const k of ['TBW Weekend', 'Best Day+', 'TOTAL']) B2C[k].push([0, 0]);
+  for (const k of Object.keys(RECEITA)) RECEITA[k].d.push([0, 0]);
+  EXPANSAO.vendas.push(0); EXPANSAO.receita.push(0);
+  return MESES.length - 1;
+}
+
+function hidratar(p) {
+  const i = posicaoDoMes(p.mes);
+  if (i < 0) return false;
+  for (const k of ['Inbound', 'Farmer', 'Palestrante']) B2B[k][i] = p.b2b.canais[k] || [0, 0];
+  B2B.TOTAL[i] = p.b2b.total;
+  B2B.metodo[i] = p.b2b.metodo;
+  for (const k of ['TBW Weekend', 'Best Day+']) B2C[k][i] = p.b2c.produtos[k] || [0, 0];
+  B2C.TOTAL[i] = p.b2c.total;
+  if (p.receita_b2c) {
+    RECEITA['TBW Weekend'].d[i] = p.receita_b2c['TBW Weekend'] || [0, 0];
+    RECEITA['Best Day+'].d[i] = p.receita_b2c['Best Day+'] || [0, 0];
+    EXPANSAO.vendas[i] = (p.receita_b2c.expansao || [0, 0])[0];
+    EXPANSAO.receita[i] = (p.receita_b2c.expansao || [0, 0])[1];
+  }
+  B2B_VENDAS_PROJETADAS = p.b2b.vendas_projetadas ?? null;
+  return true;
+}
+
+function frescor(estado, texto) {
+  const el = document.getElementById('frescor');
+  if (!el) return;
+  const cor = { vivo: 'var(--good)', parado: 'var(--warning)', estatico: 'var(--muted)' }[estado];
+  el.innerHTML = `<span class="ponto" style="background:${cor}"></span>${esc(texto)}`;
+  el.dataset.estado = estado;
+}
+
+function haQuanto(iso) {
+  const min = Math.round((Date.now() - Date.parse(iso)) / 60000);
+  if (!isFinite(min)) return 'agora';
+  if (min < 1) return 'agora';
+  if (min < 60) return `há ${min} min`;
+  return `há ${Math.round(min / 60)} h`;
+}
+
+async function atualizar() {
+  if (!PSA_WORKER_URL) return;
+  try {
+    const r = await fetch(PSA_WORKER_URL.replace(/\/$/, '') + '/conversao', { cache: 'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const p = await r.json();
+    if (p.error) throw new Error(p.error);
+    if (!hidratar(p)) throw new Error('payload de mês fora da janela');
+    montar();
+    const ressalva = p.b2b?.janela_fechada === false ? ' · janela do B2B ainda aberta' : '';
+    frescor('vivo', `${ROTULO[MESES.indexOf(p.mes)]} ao vivo · lido ${haQuanto(p.gerado_em)}${ressalva}`);
+    if (p.origens_nao_mapeadas?.length) {
+      console.warn('origens de lead sem mapeamento de canal:', p.origens_nao_mapeadas);
+    }
+  } catch (e) {
+    frescor('parado', 'ao vivo indisponível — mostrando a última leitura auditada (26/08/2026)');
+    console.warn('conversao: falha ao atualizar —', e.message);
+  }
+}
+
+if (PSA_WORKER_URL) {
+  frescor('estatico', 'carregando leitura ao vivo…');
+  atualizar();
+  setInterval(atualizar, INTERVALO_REFRESH_MS);
+  addEventListener('visibilitychange', () => { if (!document.hidden) atualizar(); });
+} else {
+  frescor('estatico', 'leitura auditada de 26/08/2026 · ao vivo desligado (defina PSA_WORKER_URL)');
+}
 
 /* redesenha no resize e na troca de tema do sistema */
 let t;

@@ -6,6 +6,19 @@ compatibility_date = "2025-01-01"
 [vars]
 ALLOWED_ORIGINS = "https://marciospagnolo-stack.github.io,http://localhost:8000"
 
+# Recalcula a taxa de conversão do mês corrente a cada 15 min e grava no KV.
+# O número não se move mais rápido que isso: ciclo mediano de 15 dias no B2B
+# e 8 no B2C, e closedate entra com atraso.
+[triggers]
+crons = ["*/15 * * * *"]
+
+# KV que guarda o agregado pronto, pra nenhuma visita esperar o HubSpot.
+# Crie uma vez e cole o id abaixo:
+#   wrangler kv namespace create CONVERSAO_KV
+[[kv_namespaces]]
+binding = "CONVERSAO_KV"
+id = "COLE_O_ID_AQUI"
+
 # Secrets — set with:
 #   wrangler secret put HUBSPOT_TOKEN
 # Optional (for future Drive/Zoom transcript fetching):
