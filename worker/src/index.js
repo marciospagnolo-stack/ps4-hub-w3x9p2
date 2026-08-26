@@ -1,8 +1,18 @@
-// PSA Curadoria Worker — v3 (lista deals B2B + campos de palestrante indicado)
+// PSA Curadoria Worker — v4 (curadoria + taxa de conversão ao vivo)
 // Endpoints:
 //   POST /curadoria { dealId } -> dados completos do deal pra preencher briefing
 //   GET  /deals?q=&limit=      -> lista deals B2B abertos pra typeahead
+//   GET  /conversao            -> taxa de conversão do mês corrente (B2B + B2C)
 // Token stays on Cloudflare; browser never sees it.
+//
+// /conversao lê o agregado do KV, que o Cron Trigger reescreve a cada 15 min.
+// Sem KV vinculado, calcula sob demanda e guarda no cache de borda pelo mesmo prazo.
+
+import { calcularMesCorrente } from './conversao.js';
+
+const CONV_TTL_S = 900; // 15 min — o número não se move mais rápido que isso
+const CONV_KEY = 'conversao:mes-corrente';
+const CONV_CACHE_KEY = 'https://psa-curadoria.internal/conversao'; // chave do cache de borda (sem KV)
 
 const DEAL_PROPS = [
   // Padrão HubSpot
@@ -62,13 +72,73 @@ export default {
       }
     }
 
+    if (url.pathname === '/conversao' && req.method === 'GET') {
+      try {
+        if (!env.HUBSPOT_TOKEN) {
+          return json({ error: 'HUBSPOT_TOKEN não configurado no Worker' }, 500, cors);
+        }
+        const dados = await conversaoAtual(env, url.searchParams.get('refresh') === '1');
+        return new Response(JSON.stringify(dados), {
+          status: 200,
+          headers: { ...cors, 'Content-Type': 'application/json; charset=utf-8',
+                     'Cache-Control': `public, max-age=60, s-maxage=${CONV_TTL_S}` },
+        });
+      } catch (e) {
+        return json({ error: String(e.message || e) }, 502, cors);
+      }
+    }
+
     if (url.pathname === '/' || url.pathname === '/health') {
-      return json({ ok: true, service: 'psa-curadoria', version: 3 }, 200, cors);
+      return json({ ok: true, service: 'psa-curadoria', version: 4 }, 200, cors);
     }
 
     return json({ error: 'not found' }, 404, cors);
   },
+
+  // Cron Trigger: recalcula e grava no KV, pra nenhuma visita pagar a espera.
+  async scheduled(event, env, ctx) {
+    if (!env.HUBSPOT_TOKEN || !env.CONVERSAO_KV) return;
+    ctx.waitUntil((async () => {
+      try {
+        const dados = await calcularMesCorrente(env.HUBSPOT_TOKEN, hs);
+        await env.CONVERSAO_KV.put(CONV_KEY, JSON.stringify(dados));
+      } catch (e) {
+        console.error('conversao scheduled:', String(e.message || e));
+      }
+    })());
+  },
 };
+
+async function conversaoAtual(env, forcar) {
+  // Caminho normal: KV reescrito pelo Cron Trigger, leitura instantânea.
+  if (env.CONVERSAO_KV) {
+    if (!forcar) {
+      const cru = await env.CONVERSAO_KV.get(CONV_KEY);
+      if (cru) {
+        const dados = JSON.parse(cru);
+        // KV frio demais (cron parado) — recalcula em vez de servir número velho calado.
+        if (Date.now() - Date.parse(dados.gerado_em) < CONV_TTL_S * 4000) return dados;
+      }
+    }
+    const dados = await calcularMesCorrente(env.HUBSPOT_TOKEN, hs);
+    await env.CONVERSAO_KV.put(CONV_KEY, JSON.stringify(dados));
+    return dados;
+  }
+
+  // Sem KV vinculado o cron não roda, mas o endpoint continua servindo: cai no
+  // cache de borda pelo mesmo prazo, então só a primeira visita de cada colo espera.
+  const cache = caches.default;
+  const chave = new Request(CONV_CACHE_KEY);
+  if (!forcar) {
+    const hit = await cache.match(chave);
+    if (hit) return hit.json();
+  }
+  const dados = await calcularMesCorrente(env.HUBSPOT_TOKEN, hs);
+  await cache.put(chave, new Response(JSON.stringify(dados), {
+    headers: { 'Content-Type': 'application/json', 'Cache-Control': `max-age=${CONV_TTL_S}` },
+  }));
+  return dados;
+}
 
 function buildCors(origin, allowedCsv) {
   const allowed = allowedCsv.split(',').map(s => s.trim()).filter(Boolean);

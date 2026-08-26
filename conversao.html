@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Taxa de Conversão — B2B e B2C · PSA</title>
+<style>
+  :root {
+    color-scheme: light;
+    --plane:        #f9f9f7;
+    --surface:      #fcfcfb;
+    --ink:          #0b0b0b;
+    --ink-2:        #52514e;
+    --muted:        #898781;
+    --grid:         #e1e0d9;
+    --axis:         #c3c2b7;
+    --border:       rgba(11,11,11,0.10);
+    --s1:           #2a78d6;  /* B2B / Inbound */
+    --s2:           #eb6834;  /* B2C / Farmer  */
+    --s3:           #1baf7a;  /* Palestrante   */
+    --good:         #0ca30c;
+    --warning:      #fab219;
+    --critical:     #d03b3b;
+    --seq-100:      #cde2fb;
+    --seq-250:      #86b6ef;
+    --seq-450:      #2a78d6;
+    --seq-650:      #104281;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --plane:   #0d0d0d;
+      --surface: #1a1a19;
+      --ink:     #ffffff;
+      --ink-2:   #c3c2b7;
+      --muted:   #898781;
+      --grid:    #2c2c2a;
+      --axis:    #383835;
+      --border:  rgba(255,255,255,0.10);
+      --s1:      #3987e5;
+      --s2:      #d95926;
+      --s3:      #199e70;
+      --seq-100: #104281;
+      --seq-250: #184f95;
+      --seq-450: #3987e5;
+      --seq-650: #9ec5f4;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --plane:   #0d0d0d;
+    --surface: #1a1a19;
+    --ink:     #ffffff;
+    --ink-2:   #c3c2b7;
+    --muted:   #898781;
+    --grid:    #2c2c2a;
+    --axis:    #383835;
+    --border:  rgba(255,255,255,0.10);
+    --s1:      #3987e5;
+    --s2:      #d95926;
+    --s3:      #199e70;
+    --seq-100: #104281;
+    --seq-250: #184f95;
+    --seq-450: #3987e5;
+    --seq-650: #9ec5f4;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px 16px 64px;
+    background: var(--plane); color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    line-height: 1.5; font-size: 15px;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+
+  header.page { margin-bottom: 8px; }
+  h1 { font-size: 28px; line-height: 1.2; margin: 0 0 6px; letter-spacing: -0.01em; }
+  .lede { color: var(--ink-2); margin: 0 0 4px; max-width: 74ch; }
+  .stamp { color: var(--muted); font-size: 13px; margin: 0; }
+  #frescor { display: inline-flex; align-items: center; gap: 6px; margin-top: 6px; }
+  #frescor .ponto { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  #frescor[data-estado="vivo"] .ponto { animation: pulso 2s infinite; }
+  @keyframes pulso { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+
+  h2 {
+    font-size: 19px; margin: 40px 0 4px; letter-spacing: -0.01em;
+    padding-top: 20px; border-top: 1px solid var(--border);
+  }
+  h2:first-of-type { border-top: 0; padding-top: 0; }
+  h3 { font-size: 15px; margin: 0 0 2px; }
+  .sub { color: var(--ink-2); font-size: 13.5px; margin: 0 0 14px; max-width: 78ch; }
+
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin: 18px 0 8px; }
+  .kpi {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px 18px;
+  }
+  .kpi .lbl { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+  .kpi .val { font-size: 34px; font-weight: 650; line-height: 1.1; margin-top: 4px; letter-spacing: -0.02em; }
+  .kpi .foot { font-size: 13px; color: var(--ink-2); margin-top: 4px; }
+  .kpi.b2b .val { color: var(--s1); }
+  .kpi.b2c .val { color: var(--s2); }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px 18px 12px; margin-bottom: 16px;
+  }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 860px) { .grid2 { grid-template-columns: 1fr; } }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; margin: 2px 0 10px; font-size: 13px; color: var(--ink-2); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .swatch { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+
+  .chart { position: relative; }
+  .chart svg { display: block; width: 100%; height: auto; }
+  .tip {
+    position: absolute; pointer-events: none; opacity: 0; transition: opacity .1s;
+    background: var(--surface); border: 1px solid var(--border);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.14);
+    border-radius: 8px; padding: 8px 10px; font-size: 12.5px; color: var(--ink);
+    min-width: 132px; z-index: 5;
+  }
+  .tip .t-h { font-weight: 650; margin-bottom: 4px; }
+  .tip .t-r { display: flex; align-items: center; gap: 6px; justify-content: space-between; }
+  .tip .t-r b { font-variant-numeric: tabular-nums; }
+  .tip .t-n { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-2); }
+
+  details.tbl { margin-top: 8px; }
+  details.tbl summary { cursor: pointer; font-size: 13px; color: var(--ink-2); padding: 4px 0; }
+  details.tbl summary:hover { color: var(--ink); }
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; margin-top: 6px; }
+  th, td { padding: 6px 9px; text-align: right; border-bottom: 1px solid var(--grid); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; font-variant-numeric: normal; }
+  thead th { color: var(--ink-2); font-weight: 600; border-bottom: 1px solid var(--axis); }
+  tbody tr:last-child td { border-bottom: 0; }
+  tr.tot td { font-weight: 650; border-top: 1px solid var(--axis); }
+
+  .note {
+    border-left: 3px solid var(--warning); background: var(--surface);
+    border-radius: 0 8px 8px 0; padding: 10px 14px; margin: 12px 0;
+    font-size: 13.5px; color: var(--ink-2);
+  }
+  .note b { color: var(--ink); }
+  .note.crit { border-left-color: var(--critical); }
+  .note.ok { border-left-color: var(--good); }
+
+  ol.method { padding-left: 20px; margin: 8px 0; }
+  ol.method li { margin-bottom: 10px; color: var(--ink-2); }
+  ol.method li b { color: var(--ink); }
+  ul.plain { padding-left: 20px; margin: 8px 0; color: var(--ink-2); }
+  ul.plain li { margin-bottom: 6px; }
+  ul.plain b { color: var(--ink); }
+
+  pre.den {
+    background: var(--plane); border: 1px solid var(--border); border-radius: 8px;
+    padding: 12px 14px; font-size: 12.5px; overflow-x: auto; color: var(--ink-2);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; line-height: 1.6;
+  }
+  pre.den b { color: var(--ink); }
+
+  footer.page { margin-top: 44px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 13px; color: var(--muted); }
+  footer.page a { color: var(--ink-2); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="page">
+  <h1>Taxa de Conversão — B2B e B2C</h1>
+  <p class="lede">Conversão proposta&nbsp;→&nbsp;venda nos dois funis da Profissionais SA, reconstruída direto do
+  HubSpot com o denominador corrigido. Não é “lead → venda”: o ponto de partida é a proposta enviada.</p>
+  <p class="stamp">Portal 49656171 · janeiro a agosto de 2026 · meses fechados vindos dos CSVs versionados</p>
+  <p class="stamp" id="frescor"></p>
+</header>
+
+<div class="kpis">
+  <div class="kpi b2b">
+    <div class="lbl">B2B · conversão jan–ago</div>
+    <div class="val" id="k-b2b"></div>
+    <div class="foot" id="k-b2b-f"></div>
+  </div>
+  <div class="kpi b2c">
+    <div class="lbl">B2C aquisição · conversão jan–ago</div>
+    <div class="val" id="k-b2c"></div>
+    <div class="foot" id="k-b2c-f"></div>
+  </div>
+  <div class="kpi">
+    <div class="lbl">Ciclo mediano até o fechamento</div>
+    <div class="val" style="font-size:26px">15,1&nbsp;d <span style="color:var(--muted);font-weight:400">/</span> 8,0&nbsp;d</div>
+    <div class="foot">B2B / B2C · p75 do B2B = 34&nbsp;d, p90 = 58&nbsp;d</div>
+  </div>
+  <div class="kpi">
+    <div class="lbl" id="k-mes"></div>
+    <div class="val" style="font-size:26px" id="k-mes-v"></div>
+    <div class="foot" id="k-mes-f"></div>
+  </div>
+</div>
+
+<div class="note">
+  <b>Agosto ainda não fechou.</b> No B2B o denominador já está travado e faltam apenas as vendas dos últimos
+  dias — daí a projeção. No B2C a coorte de agosto tem cerca de 12 dias de vida e faltam ~14% das decisões,
+  então o 6,8% do mês vai subir. <b>Trave o mês só na primeira semana do mês seguinte</b>: <code>closedate</code>
+  é editável e registros entram com atraso.
+</div>
+
+<!-- ============ 1. Série mensal ============ -->
+<h2>A conversão mês a mês</h2>
+<p class="sub">Cada ponto é a coorte de propostas do mês e o desfecho dela. Os dois funis rodam em patamares
+diferentes e por motivos diferentes — o B2B oscila com o mix de canal, o B2C com o volume.</p>
+
+<div class="card">
+  <h3>Taxa de conversão proposta → venda</h3>
+  <div class="legend" id="lg-main"></div>
+  <div class="chart" id="c-main"><div class="tip"></div></div>
+  <details class="tbl"><summary>Ver tabela</summary><div class="scroll" id="t-main"></div></details>
+</div>
+
+<div class="note">
+  <b>Mudança de método em junho.</b> Jan–mai usa coorte fechada da proposta. Jun–ago usa janela defasada
+  (propostas do dia 16 do mês anterior ao dia 15 do mês atual, vendas pelo <code>closedate</code> do mês) —
+  o ciclo B2B é longo e disperso demais para esperar a coorte amadurecer. O B2C usa coorte pura nos oito meses.
+</div>
+
+<!-- ============ 2. B2B por canal ============ -->
+<h2>B2B — o degrau do Inbound e a migração para o Farmer</h2>
+<p class="sub">O Inbound caiu de 20,3% em fevereiro para 10,2% em março e ficou seis meses nesse patamar.
+É um degrau, não uma tendência. A taxa total quase não caiu porque o peso das propostas migrou para o
+canal que converte melhor.</p>
+
+<div class="grid2">
+  <div class="card">
+    <h3>Taxa por canal — Inbound × Farmer</h3>
+    <p class="sub" style="margin-bottom:8px">Palestrante fica fora da linha: <span id="i-pal"></span> no acumulado,
+    mas 9 a 25 propostas por mês — volume baixo demais para ler mês a mês. Está na tabela.</p>
+    <div class="legend" id="lg-b2bcanal"></div>
+    <div class="chart" id="c-b2bcanal"><div class="tip"></div></div>
+    <details class="tbl"><summary>Ver tabela</summary><div class="scroll" id="t-b2bcanal"></div></details>
+  </div>
+  <div class="card">
+    <h3>Mix de propostas por canal</h3>
+    <div class="legend" id="lg-b2bmix"></div>
+    <div class="chart" id="c-b2bmix"><div class="tip"></div></div>
+    <details class="tbl"><summary>Ver tabela</summary><div class="scroll" id="t-b2bmix"></div></details>
+  </div>
+</div>
+
+<div class="note">
+  <b>Onde está o dinheiro.</b> O Inbound colocou <span id="i-inb-prop"></span> propostas no ano e converte
+  <span id="i-inb-taxa"></span>; o Farmer converte <span id="i-far-taxa"></span> e saiu de 31% para 53% do mix.
+  Cada ponto percentual no Inbound vale cerca de <b>16 vendas por ano</b>.
+</div>
+
+<!-- ============ 3. B2C ============ -->
+<h2>B2C — o teto perto de 200 propostas por mês</h2>
+<p class="sub">Nos meses de volume baixo (abril e maio) a conversão foi 17,0% e 15,4%; nos de volume alto
+ficou entre 8% e 11%. TBW Weekend e Best Day+ convertem praticamente igual — a diferença entre eles é o
+ticket, não a taxa.</p>
+
+<div class="grid2">
+  <div class="card">
+    <h3>Volume × conversão, mês a mês</h3>
+    <p class="sub" style="margin-bottom:8px">Cada ponto é um mês. Quanto mais à direita, mais propostas o time recebeu.</p>
+    <div class="chart" id="c-b2cscatter"><div class="tip"></div></div>
+    <details class="tbl"><summary>Ver tabela</summary><div class="scroll" id="t-b2cscatter"></div></details>
+  </div>
+  <div class="card">
+    <h3>Taxa por produto de aquisição</h3>
+    <div class="legend" id="lg-b2cprod"></div>
+    <div class="chart" id="c-b2cprod"><div class="tip"></div></div>
+    <details class="tbl"><summary>Ver tabela</summary><div class="scroll" id="t-b2cprod"></div></details>
+  </div>
+</div>
+
+<div class="note ok">
+  <b>Mesma taxa, ticket dez vezes menor.</b> TBW Weekend converte <span id="i-tbw-taxa"></span> com ticket
+  de <span id="i-tbw-tk"></span>; Best Day+ converte <span id="i-bd-taxa"></span> com ticket de
+  <span id="i-bd-tk"></span>. A pergunta aberta é se o Best Day+ é porta de entrada para o TBW ou dispersão
+  de capacidade comercial.
+</div>
+
+<!-- ============ 4. Receita ============ -->
+<h2>Receita B2C — o que entra na conta de conversão e o que não entra</h2>
+<p class="sub">A taxa de conversão B2C cobre <b>apenas aquisição</b>. A expansão (Legacy, Ecossistema, PSA,
+Mentorias) é venda para quem já é cliente, quase sempre criada direto como ganha. Somar as duas produzia
+uma taxa que subia quando crescia a recompra, não quando o funil melhorava.</p>
+
+<div class="card">
+  <h3>Receita por frente, por mês</h3>
+  <div class="legend" id="lg-rec"></div>
+  <div class="chart" id="c-rec"><div class="tip"></div></div>
+  <details class="tbl"><summary>Ver tabela</summary><div class="scroll" id="t-rec"></div></details>
+</div>
+
+<div class="kpis">
+  <div class="kpi">
+    <div class="lbl">Receita de aquisição (na conta)</div>
+    <div class="val" style="font-size:28px" id="k-rec-aq"></div>
+    <div class="foot" id="k-rec-aq-f"></div>
+  </div>
+  <div class="kpi">
+    <div class="lbl">Receita de expansão (fora da conta)</div>
+    <div class="val" style="font-size:28px" id="k-rec-ex"></div>
+    <div class="foot" id="k-rec-ex-f"></div>
+  </div>
+</div>
+
+<div class="note">
+  <b>Atenção ao comparar.</b> As vendas da tabela de receita são contadas pelo <code>closedate</code> e
+  incluem negócios sem carimbo de proposta; as vendas da conta de conversão são as da coorte de propostas.
+  Os dois números não batem de propósito — servem a perguntas diferentes.
+</div>
+
+<!-- ============ 5. Metodologia ============ -->
+<h2>Como o número é montado</h2>
+<p class="sub">Quatro erros que estavam embutidos em qualquer leitura direta do HubSpot, e o que foi feito
+com cada um.</p>
+
+<ol class="method">
+  <li><b>IDs internos trocados no B2B.</b> A etapa “Proposta enviada | 1° Follow” tem o ID
+  <code>closedwon</code> e “Em negociação” tem <code>closedlost</code>. Qualquer relatório via API que
+  filtre por <code>closedwon</code> conta proposta como venda.</li>
+  <li><b>Etapa de ganho errada.</b> “Negócio fechado” (<code>1076664462</code>) é a etapa marcada como
+  <i>closed won</i>; “Ganho / Contrato assinado” (<code>1076664460</code>) é administrativa e posterior.
+  Usar só a segunda daria 11 vendas em agosto no lugar de 74.</li>
+  <li><b>Denominador incompleto.</b> Um terço dos ganhos B2B não registra passagem pela proposta. Sem
+  imputar a data pela etapa seguinte, a taxa mediria 12,9% em vez de 15,1%.</li>
+  <li><b>Viés de só-ganhos.</b> Negócios criados e fechados sem passar por etapa nenhuma entravam na conta
+  apenas quando eram ganhos — os perdidos sem rastro nunca foram registrados. Foram removidos dos dois
+  funis. No B2C isso valia 3 pontos percentuais.</li>
+</ol>
+
+<pre class="den">denominador = A + B + C
+  <b>A</b>  negócio TEM carimbo de "Proposta enviada"        → usa a data real
+  <b>B</b>  não tem A, mas TEM "Em negociação"               → imputa a data desse carimbo
+  <b>C</b>  não tem A nem B, mas TEM "Negociação avançada"   → imputa a data desse carimbo (só B2B)
+  <b>D</b>  ganho sem carimbo nenhum                         → EXCLUÍDO</pre>
+
+<div class="note crit">
+  <b>Maior risco residual.</b> Perdidos sem rastro também ficam fora: <b>895 no B2B</b> e <b>3.425 no B2C</b>.
+  Não dá para distinguir “perdeu depois da proposta” de “perdeu antes dela”. Se todos tivessem tido proposta,
+  o B2B cairia de 15,1% para cerca de <b>12%</b>.
+</div>
+
+<h2>Próximos cortes</h2>
+<ul class="plain">
+  <li><b>B2B:</b> Inbound de fevereiro contra março, por campanha, fonte de tráfego ou dono. É onde deve
+  estar a explicação do degrau de 20% para 10%.</li>
+  <li><b>B2C:</b> quantos compradores de Best Day+ compram TBW depois. Decide se o produto é porta de
+  entrada ou dispersão de capacidade comercial.</li>
+</ul>
+
+<h2>Armadilhas do ambiente</h2>
+<ul class="plain">
+  <li><code>produto_de_interesse</code> é <b>multi-seleção</b>. Filtro <code>IN</code> faz correspondência
+  parcial e devolve resultado errado sem erro. Sempre agrupar e classificar fora do banco.</li>
+  <li>A reporting API aceita no máximo <b>2 dimensões</b> em <code>GROUP BY</code> — a terceira é descartada
+  em silêncio.</li>
+  <li><code>hs_v2_date_entered_1076664460</code> teve 412 entradas em fev/26 por migração em massa. Não serve
+  como data de ganho; usar <code>closedate</code>.</li>
+  <li><code>closedate</code> é editável e registros entram com atraso. Travar o mês só na primeira semana do
+  mês seguinte.</li>
+</ul>
+
+<footer class="page">
+  Fonte: HubSpot portal 49656171, extração de 26/08/2026. Consultas, IDs de etapa e regras de classificação em
+  <a href="dados/conversao/queries.sql">dados/conversao/queries.sql</a>,
+  <a href="dados/conversao/config.json">config.json</a> e
+  <a href="dados/conversao/README.md">README.md</a>.
+  Dados desta página: <a href="dados/conversao/b2b_mensal.csv">b2b_mensal.csv</a> ·
+  <a href="dados/conversao/b2c_mensal.csv">b2c_mensal.csv</a> ·
+  <a href="dados/conversao/b2c_receita.csv">b2c_receita.csv</a>.
+  <br>Meses fechados: CSVs versionados. Mês corrente: endpoint <code>/conversao</code> do Worker
+  <code>psa-curadoria</code>, recalculado a cada 15 min por Cron Trigger e servido do KV.
+  <br>PSA · Marcio Spagnolo · <a href="index.html">voltar ao hub</a>
+</footer>
+
+</div>
+<script src="conversao.js"></script>
+</body>
+</html>

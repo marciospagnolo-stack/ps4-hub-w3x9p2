@@ -1,0 +1,129 @@
+{
+  "hubspot": {
+    "portal_id": "49656171",
+    "extraido_em": "2026-08-26",
+    "periodo": { "inicio": "2026-01-01", "fim": "2026-08-26" }
+  },
+
+  "pipelines": {
+    "b2b": {
+      "id": "default",
+      "label": "Funil de Vendas B2B",
+      "_alerta": "IDs internos trocados: 'closedwon' NAO e ganho, e 'closedlost' NAO e perdido",
+      "etapas": {
+        "reuniao_qualificado": { "id": "decisionmakerboughtin", "label": "Reunião agendada / Qualificado" },
+        "proposta_enviada":    { "id": "closedwon",             "label": "Proposta enviada | 1° Follow" },
+        "em_negociacao":       { "id": "closedlost",            "label": "Em negociação" },
+        "negociacao_avancada": { "id": "1167445770",            "label": "Negociação avançada" },
+        "negocio_fechado":     { "id": "1076664462",            "label": "Negócio fechado", "ganho": true, "hs_is_closed_won": true },
+        "ganho_contrato":      { "id": "1076664460",            "label": "Ganho / Contrato assinado", "ganho": true, "hs_is_closed_won": false },
+        "perdido":             { "id": "1076664461",            "label": "Perdido" }
+      },
+      "etapas_ganho": ["1076664462", "1076664460"],
+      "props_data_entrada": {
+        "proposta_enviada":    "hs_v2_date_entered_closedwon",
+        "em_negociacao":       "hs_v2_date_entered_closedlost",
+        "negociacao_avancada": "hs_v2_date_entered_1167445770"
+      }
+    },
+
+    "b2c": {
+      "id": "725182862",
+      "label": "Funil de Vendas B2C",
+      "etapas": {
+        "reuniao_qualificado": { "id": "1057266721", "label": "Reunião agendada / Qualificado" },
+        "proposta_enviada":    { "id": "1057266722", "label": "Proposta enviada | 1° Follow" },
+        "em_negociacao":       { "id": "1275670104", "label": "Em negociação" },
+        "negociacao_avancada": { "id": "1275670105", "label": "Negociação avançada" },
+        "ganho":               { "id": "1105295876", "label": "Ganho", "ganho": true, "hs_is_closed_won": true },
+        "perdido":             { "id": "1059939760", "label": "Perdido" },
+        "base_clientes":       { "id": "1406850078", "label": "Base de clientes" }
+      },
+      "etapas_ganho": ["1105295876"],
+      "props_data_entrada": {
+        "proposta_enviada":    "hs_v2_date_entered_1057266722",
+        "em_negociacao":       "hs_v2_date_entered_1275670104",
+        "negociacao_avancada": "hs_v2_date_entered_1275670105"
+      }
+    }
+  },
+
+  "propriedades": {
+    "data_ganho": "closedate",
+    "data_criacao": "createdate",
+    "valor": "amount_in_home_currency",
+    "moeda_portal": "BRL",
+    "canal_primario": "origem_da_qualificacao",
+    "canal_fallback": "origem_do_lead",
+    "flag_carteira": "esse_negocio_e_de_kam_",
+    "produto": "produto_de_interesse",
+    "_produto_multiselect": true
+  },
+
+  "ciclo_mediano_dias": { "b2b": 15.1, "b2c_entrada": 8.0 },
+
+  "metodo": {
+    "b2b": {
+      "jan_a_mai": "coorte da proposta (ciclo encerrado)",
+      "jun_a_ago": "janela defasada: propostas do dia 16 do mês anterior ao dia 15 do mês atual; numerador = ganhos com closedate no mês",
+      "justificativa": "ciclo longo e disperso: apenas 49% fecham em 15 dias, p75=34d, p90=58d"
+    },
+    "b2c": {
+      "todos_os_meses": "coorte pura da proposta",
+      "justificativa": "ciclo curto e concentrado: 48% em 7d, 74% em 15d, 86% em 30d — não precisa de janela"
+    }
+  },
+
+  "denominador": {
+    "componente_A": "negócios COM carimbo de 'Proposta enviada' — data real",
+    "componente_B": "SEM carimbo de proposta MAS com carimbo de 'Em negociação' — imputa a data desse carimbo",
+    "componente_C": "SEM os dois MAS com 'Negociação avançada' (só B2B) — imputa a data desse carimbo",
+    "componente_D_EXCLUIDO": "ganhos sem carimbo nenhum — REMOVIDOS. Só entravam quando ganhos (os perdidos sem rastro nunca foram registrados), logo contavam com 100% de conversão por construção",
+    "excluidos_tambem": {
+      "b2b_perdidos_sem_rastro": 895,
+      "b2c_perdidos_sem_rastro": 3425,
+      "nota": "impossível distinguir 'perdeu depois da proposta' de 'perdeu antes dela'. Se todos tivessem tido proposta, o B2B cairia para ~12%"
+    }
+  },
+
+  "canais_b2b": {
+    "regra": "usar origem_da_qualificacao; se vazia, cair para origem_do_lead",
+    "mapeamento": {
+      "Inbound":     ["Inbound", "Indicação", "Indicação Partner | B2B", "Ação de CRM (não-carteira)"],
+      "Farmer":      ["Farmer", "KAM", "Cadência do BDR", "Curador", "Carteira do Farmer", "Ação de CRM (carteira)"],
+      "Palestrante": ["Palestrante", "Base de Palestrantes", "Agência de Palestrantes"]
+    },
+    "regra_acao_de_crm": "vai para Farmer quando esse_negocio_e_de_kam_ começa com 'Sim'; senão (inclusive vazio) vai para Inbound"
+  },
+
+  "produtos_b2c": {
+    "aquisicao": [
+      "TBW Weekend (Presencial)",
+      "Pré The Best Weekend",
+      "Amolador",
+      "TBW Weeks (Online)",
+      "The Best Weeks (pré lançamento)",
+      "Não se aplica",
+      "(vazio)"
+    ],
+    "expansao_FORA_DA_CONTA": [
+      "Legacy", "Ecossistema", "PSA Partner", "PSA.Experience", "Drops",
+      "Caleidoscópio", "Story_Making", "Mentoria Márcio",
+      "Clara (Tokens)", "Leopoldo (Tokens)"
+    ],
+    "grupos": {
+      "TBW Weekend": ["TBW Weekend (Presencial)", "Não se aplica", "(vazio)"],
+      "Best Day+":   ["Pré The Best Weekend", "Amolador", "TBW Weeks (Online)", "The Best Weeks (pré lançamento)"],
+      "Mentorias":   ["Caleidoscópio", "Story_Making", "Mentoria Márcio"],
+      "Base":        ["Legacy", "Ecossistema", "PSA Partner", "PSA.Experience", "Drops", "Clara (Tokens)", "Leopoldo (Tokens)"]
+    },
+    "_alerta": "produto_de_interesse é MULTI-SELEÇÃO. Filtro SQL com IN faz correspondência parcial e devolve resultado errado — sempre agrupar e classificar fora do banco. Um negócio 'TBW Weekend;Legacy' conta como aquisição."
+  },
+
+  "armadilhas": [
+    "IN com valores acentuados/parentizados no produto retorna correspondência parcial silenciosa",
+    "reporting API aceita no máximo 2 dimensões em GROUP BY; a terceira é descartada sem erro",
+    "hs_v2_date_entered_1076664460 (B2B) teve 412 entradas em fev/26 por migração em massa — não usar como data de ganho",
+    "closedate é editável e registros entram com atraso: travar o mês só na 1ª semana do mês seguinte"
+  ]
+}

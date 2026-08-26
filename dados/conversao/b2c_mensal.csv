@@ -1,0 +1,25 @@
+mes,metodo,produto,propostas,vendas,taxa_pct
+2026-01,coorte,TBW Weekend,279,33,11.8
+2026-01,coorte,Best Day+,47,0,0.0
+2026-01,coorte,TOTAL,326,33,10.1
+2026-02,coorte,TBW Weekend,250,19,7.6
+2026-02,coorte,Best Day+,22,4,18.2
+2026-02,coorte,TOTAL,272,23,8.5
+2026-03,coorte,TBW Weekend,195,17,8.7
+2026-03,coorte,Best Day+,112,12,10.7
+2026-03,coorte,TOTAL,307,29,9.4
+2026-04,coorte,TBW Weekend,127,20,15.7
+2026-04,coorte,Best Day+,61,12,19.7
+2026-04,coorte,TOTAL,188,32,17.0
+2026-05,coorte,TBW Weekend,125,19,15.2
+2026-05,coorte,Best Day+,63,10,15.9
+2026-05,coorte,TOTAL,188,29,15.4
+2026-06,coorte,TBW Weekend,120,13,10.8
+2026-06,coorte,Best Day+,61,4,6.6
+2026-06,coorte,TOTAL,181,17,9.4
+2026-07,coorte,TBW Weekend,191,20,10.5
+2026-07,coorte,Best Day+,97,13,13.4
+2026-07,coorte,TOTAL,288,33,11.5
+2026-08,coorte,TBW Weekend,203,14,6.9
+2026-08,coorte,Best Day+,18,1,5.6
+2026-08,coorte,TOTAL,221,15,6.8
