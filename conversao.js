@@ -41,9 +41,11 @@ const EXPANSAO = {
   receita: MESES.map((_, i) => RECEITA['Mentorias'].d[i][1] + RECEITA['Base'].d[i][1]),
 };
 
-// Endpoint do Worker que devolve o mês corrente ao vivo. Vazio = página serve só
-// os números auditados dos CSVs. Ex.: 'https://psa-curadoria.SUA-CONTA.workers.dev'
-const PSA_WORKER_URL = '';
+// Endpoint do Worker que devolve o mês corrente ao vivo. Mesmo Worker que o
+// curadoria.html já usa. Enquanto a versão com /conversao não estiver publicada,
+// a chamada dá 404 e a página segue nos números auditados dos CSVs, dizendo isso
+// no cabeçalho. Vazio desliga a leitura ao vivo de vez.
+const PSA_WORKER_URL = 'https://psa-curadoria.marcio-spagnolo.workers.dev';
 const INTERVALO_REFRESH_MS = 5 * 60 * 1000;
 
 /* ---------- formatação ---------- */
